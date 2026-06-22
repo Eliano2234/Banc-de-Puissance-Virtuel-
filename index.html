@@ -75,20 +75,37 @@
                 <select id="car-select" onchange="applyVehicleSpecs()">
                     <option value="custom">-- Configuration standard sur-mesure --</option>
                     
-                    <optgroup label="BMW Série 3 E46 (Essence)">
-                        <option value="e46_316i">BMW 316i (1999-2001) - M43B19 [105 ch] - 3e</option>
-                        <option value="e46_318i">BMW 318i (2001-2005) - N42B20 [143 ch] - 4e</option>
-                        <option value="e46_320i">BMW 320i (2000-2005) - M54B22 [170 ch] - 4e</option>
-                    </optgroup>
-                    
-                    <optgroup label="BMW Série 3 E46 (Diesel)">
-                        <option value="e46_320d">BMW 320d (2001-2005) - M47TUD20 [150 ch] - 4e</option>
+                    <optgroup label="Peugeot (HDi / BlueHDi)">
+                        <option value="p1007_hdi">Peugeot 1007 1.6 HDi (2007) - DV6TED4 [110 ch] - 3e</option>
+                        <option value="p307_hdi_90">Peugeot 307 1.6 HDi (2007) - DV69HX [90 ch] - 4e</option>
+                        <option value="p308_b_hdi_90">Peugeot 308 1.6 BlueHDi (2019) - DV6FD [90 ch] - 4e</option>
                     </optgroup>
 
-                    <optgroup label="Peugeot Gamme HDi / BlueHDi">
-                        <option value="p306_hdi">Peugeot 306 2.0 HDi (1999-2002) - DW10TD [90 ch] - 3e</option>
-                        <option value="p307_hdi">Peugeot 307 1.6 HDi (2004-2008) - DV6TED4 [110 ch] - 4e</option>
-                        <option value="p308_bluehdi">Peugeot 308 1.5 BlueHDi (2017-2021) - DV5RC [130 ch] - 4e</option>
+                    <optgroup label="BMW E36 / E46 (TDS, d, td, i)">
+                        <option value="e36_325td">BMW 325td E36 (1993) - M51D25 [115 ch] - 4e</option>
+                        <option value="e36_325tds">BMW 325tds E36 (1995) - M51D25OL [143 ch] - 4e</option>
+                        <option value="e46_316i">BMW 316i E46 (2001) - M43B19 [105 ch] - 3e</option>
+                        <option value="e46_318i">BMW 318i E46 (2003) - N42B20 [143 ch] - 4e</option>
+                        <option value="e46_320i">BMW 320i E46 (2002) - M54B22 [170 ch] - 4e</option>
+                        <option value="e46_320d_p1">BMW 320d E46 Ph.1 (1998) - M47D20 [136 ch] - 4e</option>
+                        <option value="e46_320d_p2">BMW 320d E46 Ph.2 (2003) - M47TUD20 [150 ch] - 4e</option>
+                        <option value="e46_330d">BMW 330d E46 (2003) - M57TUD30 [204 ch] - 4e</option>
+                    </optgroup>
+
+                    <optgroup label="Volkswagen Golf (TDI)">
+                        <option value="golf4_tdi_90">Golf 4 1.9 TDI (1998) - AGR/ALH [90 ch] - 4e</option>
+                        <option value="golf4_tdi_110">Golf 4 1.9 TDI (2000) - AHF/ASV [110 ch] - 4e</option>
+                        <option value="golf4_tdi_130">Golf 4 1.9 TDI (2002) - ASZ [130 ch] - 4e</option>
+                        <option value="golf4_tdi_150">Golf 4 1.9 TDI (2003) - ARL [150 ch] - 4e</option>
+                        <option value="golf5_tdi_105">Golf 5 1.9 TDI (2005) - BKC/BLS [105 ch] - 4e</option>
+                        <option value="golf6_tdi_140">Golf 6 2.0 TDI (2010) - CBAB [140 ch] - 4e</option>
+                    </optgroup>
+
+                    <optgroup label="Seat Ibiza (TDI)">
+                        <option value="ibiza3_tdi_100">Ibiza 3 1.9 TDI (2004) - ATD/AXR [100 ch] - 4e</option>
+                        <option value="ibiza3_tdi_130">Ibiza 3 1.9 TDI (2005) - ASZ/BLT [130 ch] - 4e</option>
+                        <option value="ibiza4_tdi_90">Ibiza 4 1.6 TDI (2011) - CAYB [90 ch] - 4e</option>
+                        <option value="ibiza4_tdi_105">Ibiza 4 1.6 TDI (2013) - CAYC [105 ch] - 4e</option>
                     </optgroup>
                 </select>
             </div>
@@ -153,15 +170,29 @@
     </div>
 
     <script>
-        // BASE DE DONNÉES SPÉCIFICATIONS ET CARTOGRAPHIES CONSTRUCTEURS (USINE)
+        // BASE DE DONNÉES DES MOTORISATIONS COURANTES RESTRUCTURÉE selon tes directives
         const dbVehicules = {
-            "e46_316i": { w: 195, h: 65, r: 15, gear: 1.540, final: 3.230, target: "3ème", weight: 1360, maxRpm: 6000, type: 'i', name: "316i M43B19 (2001)", factoryHp: 105, factoryNm: 165, pPeakRpm: 5300, cPeakRpm: 2500 },
-            "e46_318i": { w: 205, h: 55, r: 16, gear: 1.240, final: 3.380, target: "4ème", weight: 1470, maxRpm: 6500, type: 'i', name: "318i N42B20 (2003)", factoryHp: 143, factoryNm: 200, pPeakRpm: 6000, cPeakRpm: 3750 },
-            "e46_320i": { w: 205, h: 55, r: 16, gear: 1.240, final: 3.380, target: "4ème", weight: 1500, maxRpm: 6500, type: 'i', name: "320i M54B22 (2002)", factoryHp: 170, factoryNm: 210, pPeakRpm: 6100, cPeakRpm: 3500 },
-            "e46_320d": { w: 205, h: 55, r: 16, gear: 1.230, final: 2.560, target: "4ème", weight: 1505, maxRpm: 4600, type: 'd', name: "320d M47TU (2004)",  factoryHp: 150, factoryNm: 330, pPeakRpm: 4000, cPeakRpm: 2000 },
-            "p306_hdi": { w: 195, h: 55, r: 15, gear: 1.321, final: 3.529, target: "3ème", weight: 1180, maxRpm: 4500, type: 'd', name: "306 2.0HDi DW10 (2001)", factoryHp: 90,  factoryNm: 205, pPeakRpm: 4000, cPeakRpm: 1900 },
-            "p307_hdi": { w: 205, h: 55, r: 16, gear: 1.026, final: 3.684, target: "4ème", weight: 1390, maxRpm: 4500, type: 'd', name: "307 1.6HDi DV6 (2006)", factoryHp: 110, factoryNm: 240, pPeakRpm: 4000, cPeakRpm: 1750 },
-            "p308_bluehdi": { w: 205, h: 55, r: 16, gear: 0.920, final: 3.580, target: "4ème", weight: 1375, maxRpm: 4500, type: 'd', name: "308 1.5BHDi DV5 (2019)",factoryHp: 130, factoryNm: 300, pPeakRpm: 3750, cPeakRpm: 1750 }
+            "p1007_hdi": { w: 195, h: 50, r: 16, gear: 1.321, final: 3.530, target: "3ème", weight: 1261, maxRpm: 4500, type: 'd', name: "1007 1.6HDi DV6 (2007)", factoryHp: 110, factoryNm: 240, pPeakRpm: 4000, cPeakRpm: 1750 },
+            "p307_hdi_90": { w: 195, h: 65, r: 15, gear: 1.026, final: 3.684, target: "4ème", weight: 1290, maxRpm: 4500, type: 'd', name: "307 1.6HDi DV69HX (2007)", factoryHp: 90, factoryNm: 215, pPeakRpm: 4000, cPeakRpm: 1750 },
+            "p308_b_hdi_90": { w: 205, h: 55, r: 16, gear: 0.920, final: 3.580, target: "4ème", weight: 1350, maxRpm: 4500, type: 'd', name: "308 1.6BHDi DV6FD (2019)", factoryHp: 90, factoryNm: 230, pPeakRpm: 3500, cPeakRpm: 1750 },
+            "e36_325td": { w: 205, h: 60, r: 15, gear: 1.240, final: 2.650, target: "4ème", weight: 1420, maxRpm: 4800, type: 'd', name: "E36 325td M51D25 (1993)", factoryHp: 115, factoryNm: 222, pPeakRpm: 4500, cPeakRpm: 1900 },
+            "e36_325tds": { w: 205, h: 60, r: 15, gear: 1.240, final: 2.560, target: "4ème", weight: 1440, maxRpm: 4800, type: 'd', name: "E36 325tds M51 (1995)", factoryHp: 143, factoryNm: 280, pPeakRpm: 4400, cPeakRpm: 2200 },
+            "e46_316i": { w: 195, h: 65, r: 15, gear: 1.540, final: 3.230, target: "3ème", weight: 1360, maxRpm: 6000, type: 'i', name: "E46 316i M43B19 (2001)", factoryHp: 105, factoryNm: 165, pPeakRpm: 5300, cPeakRpm: 2500 },
+            "e46_318i": { w: 205, h: 55, r: 16, gear: 1.240, final: 3.380, target: "4ème", weight: 1470, maxRpm: 6500, type: 'i', name: "E46 318i N42B20 (2003)", factoryHp: 143, factoryNm: 200, pPeakRpm: 6000, cPeakRpm: 3750 },
+            "e46_320i": { w: 205, h: 55, r: 16, gear: 1.240, final: 3.380, target: "4ème", weight: 1500, maxRpm: 6500, type: 'i', name: "E46 320i M54B22 (2002)", factoryHp: 170, factoryNm: 210, pPeakRpm: 6100, cPeakRpm: 3500 },
+            "e46_320d_p1": { w: 195, h: 65, r: 15, gear: 1.240, final: 2.790, target: "4ème", weight: 1475, maxRpm: 4600, type: 'd', name: "E46 320d P1 M47 (1998)", factoryHp: 136, factoryNm: 280, pPeakRpm: 4000, cPeakRpm: 1750 },
+            "e46_320d_p2": { w: 205, h: 55, r: 16, gear: 1.230, final: 2.560, target: "4ème", weight: 1505, maxRpm: 4600, type: 'd', name: "E46 320d P2 M47TU (2003)", factoryHp: 150, factoryNm: 330, pPeakRpm: 4000, cPeakRpm: 2000 },
+            "e46_330d": { w: 225, h: 45, r: 17, gear: 1.190, final: 2.470, target: "4ème", weight: 1615, maxRpm: 4600, type: 'd', name: "E46 330d M57TU (2003)", factoryHp: 204, factoryNm: 410, pPeakRpm: 4000, cPeakRpm: 1500 },
+            "golf4_tdi_90": { w: 195, h: 65, r: 15, gear: 0.917, final: 3.389, target: "4ème", weight: 1250, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ALH (1998)", factoryHp: 90, factoryNm: 210, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "golf4_tdi_110": { w: 195, h: 65, r: 15, gear: 0.917, final: 3.389, target: "4ème", weight: 1280, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ASV (2000)", factoryHp: 110, factoryNm: 235, pPeakRpm: 4100, cPeakRpm: 1900 },
+            "golf4_tdi_130": { w: 205, h: 55, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1320, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI Inject.-P (2002)", factoryHp: 130, factoryNm: 310, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "golf4_tdi_150": { w: 205, h: 55, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1350, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ARL (2003)", factoryHp: 150, factoryNm: 320, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "golf5_tdi_105": { w: 195, h: 65, r: 15, gear: 0.880, final: 3.390, target: "4ème", weight: 1370, maxRpm: 4500, type: 'd', name: "Golf 5 1.9TDI BLS (2005)", factoryHp: 105, factoryNm: 250, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "golf6_tdi_140": { w: 205, h: 55, r: 16, gear: 0.860, final: 3.450, target: "4ème", weight: 1410, maxRpm: 4500, type: 'd', name: "Golf 6 2.0TDI CBAB (2010)", factoryHp: 140, factoryNm: 320, pPeakRpm: 4200, cPeakRpm: 1750 },
+            "ibiza3_tdi_100": { w: 195, h: 55, r: 15, gear: 0.850, final: 3.390, target: "4ème", weight: 1190, maxRpm: 4500, type: 'd', name: "Ibiza 3 1.9TDI AXR (2004)", factoryHp: 100, factoryNm: 240, pPeakRpm: 4000, cPeakRpm: 1800 },
+            "ibiza3_tdi_130": { w: 205, h: 45, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1220, maxRpm: 4500, type: 'd', name: "Ibiza 3 1.9TDI BLT (2005)", factoryHp: 130, factoryNm: 310, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "ibiza4_tdi_90": { w: 185, h: 60, r: 15, gear: 0.760, final: 3.650, target: "4ème", weight: 1215, maxRpm: 4500, type: 'd', name: "Ibiza 4 1.6TDI CAYB (2011)", factoryHp: 90, factoryNm: 230, pPeakRpm: 4200, cPeakRpm: 1500 },
+            "ibiza4_tdi_105": { w: 215, h: 45, r: 16, gear: 0.760, final: 3.650, target: "4ème", weight: 1230, maxRpm: 4500, type: 'd', name: "Ibiza 4 1.6TDI CAYC (2013)", factoryHp: 105, factoryNm: 250, pPeakRpm: 4400, cPeakRpm: 1500 }
         };
 
         let currentStep = 0; 
@@ -242,17 +273,16 @@
             document.getElementById('hud-rpm').innerText = rpm;
 
             const carKey = document.getElementById('car-select').value;
-            const maxRpm = carKey !== 'custom' ? dbVehicules[carKey].maxRpm : 6000;
+            const maxRpm = carKey !== 'custom' ? dbVehicules[carKey].maxRpm : 4500;
             const isDiesel = carKey !== 'custom' && dbVehicules[carKey].type === 'd';
 
-            // ALGORITHME DE CALCUL TÉLÉMÉTRIQUE DU VÉHICULE EN ACTION
+            // SIMULATION AVEC RENDEMENT ROUTE RÉEL COMPTE TENU DU PATINAGE
             let instantHp = 0;
             if (rpm > 1500) {
-                // Modélisation dynamique basée sur la sélection
-                let baseHp = carKey !== 'custom' ? dbVehicules[carKey].factoryHp : 120;
-                let factor = isDiesel ? (rpm / (maxRpm*0.85)) * (1 - Math.pow((rpm - 3800)/1600, 2)) : (rpm / (maxRpm*0.9)) * (1 - Math.pow((rpm - 5500)/3800, 2));
-                instantHp = (baseHp * factor) * 0.96; // Légère perte de frottement naturel route
-                instantHp = Math.max(0, Math.round(instantHp + (Math.random() - 0.5) * 3));
+                let baseHp = carKey !== 'custom' ? dbVehicules[carKey].factoryHp : 100;
+                let factor = isDiesel ? (rpm / (maxRpm*0.85)) * (1 - Math.pow((rpm - 3600)/1700, 2)) : (rpm / (maxRpm*0.9)) * (1 - Math.pow((rpm - 5200)/3500, 2));
+                instantHp = (baseHp * factor) * 0.95;
+                instantHp = Math.max(0, Math.round(instantHp + (Math.random() - 0.5) * 2.5));
             }
             let instantNm = instantHp > 0 ? Math.round((instantHp * 7023.5) / rpm) : 0;
 
@@ -284,7 +314,7 @@
                 if (rpm > 2000) {
                     loggedSamples.push({ rpm: rpm, speed: speed, hp: instantHp, nm: instantNm });
                 }
-                if (rpm >= maxRpm - 200) {
+                if (rpm >= maxRpm - 150) {
                     currentStep = 4;
                     document.getElementById('inst-main').innerText = "🛑 DÉBRAYEZ !";
                     document.getElementById('inst-main').style.color = "#ff3b30";
@@ -298,7 +328,6 @@
             }
         }
 
-        // COMPILATION MATHÉMATIQUE ET DISPOSITIF DE COMPARISON CONSTRUCTEUR
         function compileAndSwitchToResults() {
             clearInterval(simInterval);
             if(gpsWatch) navigator.geolocation.clearWatch(gpsWatch);
@@ -318,26 +347,21 @@
             document.getElementById('res-hp').innerText = maxHp;
             document.getElementById('res-nm').innerText = maxNm;
 
-            // GÉNÉRATION MATHÉMATIQUE DES COURBES DE RÉFÉRENCE CONSTRUCTEUR (USINE)
             let factoryHpCurve = [];
             let factoryNmCurve = [];
             
             rpms.forEach(rpm => {
-                let fHp = 0;
-                let fNm = 0;
-                
+                let fHp = 0; let fNm = 0;
                 if (carKey !== 'custom') {
                     const specs = dbVehicules[carKey];
-                    // Génération d'un profil de courbe d'origine propre au comportement moteur (Diesel vs Essence Atmo)
                     if (specs.type === 'd') {
-                        fHp = specs.factoryHp * (rpm / specs.pPeakRpm) * (1 - Math.pow((rpm - specs.pPeakRpm)/1900, 2));
+                        fHp = specs.factoryHp * (rpm / specs.pPeakRpm) * (1 - Math.pow((rpm - specs.pPeakRpm)/1800, 2));
                     } else {
-                        fHp = specs.factoryHp * (rpm / specs.pPeakRpm) * (1 - Math.pow((rpm - specs.pPeakRpm)/4000, 2));
+                        fHp = specs.factoryHp * (rpm / specs.pPeakRpm) * (1 - Math.pow((rpm - specs.pPeakRpm)/3800, 2));
                     }
                     fHp = Math.max(0, fHp);
                     fNm = (fHp * 7023.5) / rpm;
                 }
-                
                 factoryHpCurve.push(Math.round(fHp));
                 factoryNmCurve.push(Math.round(fNm));
             });
@@ -358,7 +382,6 @@
             renderHistoryLogs();
             displayTargetChart(runReport.chartData);
 
-            // Remise à zéro
             currentStep = 0;
             document.getElementById('btn-action').style.display = 'block';
             document.getElementById('btn-action').innerText = "Démarrer la Procédure";
@@ -366,7 +389,7 @@
             document.getElementById('inst-main').innerText = "DISPOSITIF EN ATTENTE";
             document.getElementById('inst-main').style.color = "#fff";
 
-            switchView(2); // Affichage direct de l'onglet comparatif
+            switchView(2);
         }
 
         function initChartArchitecture() {
@@ -387,14 +410,11 @@
             });
         }
 
-        // CHARGEMENT DOUBLE FINÊTRE CONSTRUCTEUR VS MESURES
         function displayTargetChart(data) {
             dynoChart.data.labels = data.labels;
             dynoChart.data.datasets = [
-                // CAPTEURS RÉELS
                 { label: 'Puissance Réelle', data: data.hp, borderColor: '#00f3ff', yAxisID: 'y', borderWidth: 3, pointRadius: 0 },
                 { label: 'Couple Réel', data: data.nm, borderColor: '#ff3b30', yAxisID: 'y1', borderWidth: 3, pointRadius: 0 },
-                // DONNÉES USINE CONSTRUCTEUR
                 { label: 'Puissance Usine', data: data.fHp, borderColor: 'rgba(0, 243, 255, 0.35)', yAxisID: 'y', borderWidth: 2, borderDash: [6, 4], pointRadius: 0 },
                 { label: 'Couple Usine', data: data.fNm, borderColor: 'rgba(255, 59, 48, 0.35)', yAxisID: 'y1', borderWidth: 2, borderDash: [6, 4], pointRadius: 0 }
             ];
@@ -439,18 +459,17 @@
 
         function injectVirtualTelemetry() {
             const carKey = document.getElementById('car-select').value;
-            const maxRpm = carKey !== 'custom' ? dbVehicules[carKey].maxRpm : 6000;
-            
-            simKmh = 30; loggedSamples = [];
+            const car = dbVehicules[carKey];
+            simKmh = 25; loggedSamples = [];
             simInterval = setInterval(() => {
                 if (currentStep === 2) {
-                    simKmh = carKey.includes("306") || carKey.includes("316") ? 41.2 : 52.8; // Calibrage vitesse de synchro ~2000tr
+                    simKmh = car && car.target === "3ème" ? 38.5 : 48.0;
                 }
                 else if (currentStep === 3) {
-                    simKmh += carKey.includes("316") || carKey.includes("306") ? 1.1 : 1.5; // Accélération proportionnelle
+                    simKmh += car && car.factoryHp < 110 ? 1.0 : 1.4;
                 }
                 else if (currentStep === 4) {
-                    simKmh -= 0.9;
+                    simKmh -= 0.8;
                 }
                 updateTelemetryData({ coords: { speed: simKmh / 3.6 } });
             }, 100);
