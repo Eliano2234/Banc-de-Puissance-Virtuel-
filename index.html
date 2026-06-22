@@ -1,190 +1,510 @@
-import math
-import time
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automotive Virtual Dyno</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
 
-# ==========================================
-# 1. BIBLIOTHÈQUE VÉHICULES (BASE DE DONNÉES)
-# ==========================================
-VEHICLE_DATABASE = {
-    "BMW": {
-        "E46 320d": {
-            "2002": {"puissance_orig": 150, "moteur": "M47TUD20", "masse": 1490, "pneus": "225/45/17", "ratio_rapport": 1.54}, # Exemple de ratio en 3ème
-        },
-        "E46 330d": {
-            "2003": {"puissance_orig": 204, "moteur": "M57TUD30", "masse": 1595, "pneus": "225/45/17", "ratio_rapport": 1.48},
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
         }
-    },
-    "SEAT": {
-        "Ibiza Cupra TDI": {
-            "2005": {"puissance_orig": 160, "moteur": "BUK", "masse": 1215, "pneus": "205/40/17", "ratio_rapport": 1.32},
-        },
-        "Ibiza TDI FR": {
-            "2004": {"puissance_orig": 130, "moteur": "ASZ", "masse": 1190, "pneus": "205/45/16", "ratio_rapport": 1.32},
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
         }
-    },
-    "VOLKSWAGEN": {
-        "Golf 4 TDI 150": {
-            "2002": {"puissance_orig": 150, "moteur": "ARL", "masse": 1315, "pneus": "205/55/16", "ratio_rapport": 1.34},
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            margin-top: 0;
         }
-    },
-    "PEUGEOT": {
-        "307 HDI": {
-            "2005": {"puissance_orig": 90, "moteur": "DV6ATED4", "masse": 1200, "pneus": "195/65/15", "ratio_rapport": 1.37},
-        },
-        "1007 HDI": {
-            "2006": {"puissance_orig": 90, "moteur": "DV6ATED4", "masse": 1215, "pneus": "195/50/16", "ratio_rapport": 1.37},
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success { background-color: var(--accent-green); color: white; }
+        .btn-danger { background-color: var(--accent-red); color: white; }
+
+        .telemetry-display {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .telemetry-box {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            width: 45%;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .telemetry-val {
+            font-size: 2rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        #procedure-status {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #0f172a;
+            margin-top: 15px;
+            border: 2px dashed #334155;
+        }
+
+        .status-stabilise { color: #f59e0b; border-color: #f59e0b !important; }
+        .status-wOT { color: var(--accent-green); border-color: var(--accent-green) !important; animation: blink 1s infinite; }
+        .status-debrayer { color: var(--accent-red); border-color: var(--accent-red) !important; }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .checkbox-container input {
+            width: auto;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="card" id="screen-config">
+        <h2>Configuration du Véhicule</h2>
+        <div class="grid" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+            <div>
+                <label for="car-select">Sélectionner un modèle de la bibliothèque</label>
+                <select id="car-select" onchange="chargerVehicule()">
+                    <option value="">-- Choisir un véhicule --</option>
+                    <option value="e46_320d">BMW E46 320d (2002) - M47 (150cv)</option>
+                    <option value="e46_330d">BMW E46 330d (2003) - M57 (204cv)</option>
+                    <option value="ibiza_130">Seat Ibiza FR TDI (2004) - ASZ (130cv)</option>
+                    <option value="ibiza_cupra">Seat Ibiza Cupra TDI (2005) - BUK (160cv)</option>
+                    <option value="golf_150">VW Golf 4 TDI (2002) - ARL (150cv)</option>
+                    <option value="p307_90">Peugeot 307 1.6 HDi (2005) - DV6 (90cv)</option>
+                    <option value="p1007_90">Peugeot 1007 1.6 HDi (2006) - DV6 (90cv)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div>
+                <label for="input-masse">Masse totale (kg)</label>
+                <input type="number" id="input-masse" value="1300">
+            </div>
+            <div>
+                <label for="input-ratio">Démultiplication rapport engagé</label>
+                <input type="number" id="input-ratio" step="0.01" value="1.35">
+            </div>
+            <div>
+                <label for="input-pneus">Taille des pneus (ex: 225/45/17)</label>
+                <input type="text" id="input-pneus" value="205/55/16">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button class="btn btn-success" onclick="validerConfiguration()">Valider & Passer au Dyno</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card hidden" id="screen-dyno">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Acquisition Télémétrie</h2>
+            <button class="btn" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="retourConfig()">Modifier auto</button>
+        </div>
+
+        <div class="telemetry-display">
+            <div class="telemetry-box">
+                <label>Vitesse GPS</label>
+                <div class="telemetry-val"><span id="val-gps">0.0</span> <span style="font-size: 1rem;">km/h</span></div>
+            </div>
+            <div class="telemetry-box" style="border-left-color: var(--accent-green);">
+                <label>Régime Moteur Éstimé</label>
+                <div class="telemetry-val"><span id="val-rpm">0</span> <span style="font-size: 1rem;">RPM</span></div>
+            </div>
+        </div>
+
+        <button class="btn btn-danger" id="btn-rapport" onclick="basculerRapport()">Engager Rapport 3</button>
+
+        <div id="procedure-area" class="hidden" style="margin-top: 20px;">
+            <button class="btn" id="btn-start-tir" onclick="lancerChronologieTir()" style="background-color: #f59e0b; color: white;">Lancer la procédure de tir</button>
+            <div id="procedure-status" class="hidden">Prêt pour la stabilisation...</div>
+        </div>
+    </div>
+
+    <div class="card hidden" id="screen-graph">
+        <h2>Analyse du Tir</h2>
+        
+        <div class="chart-container">
+            <canvas id="dynoChart"></canvas>
+        </div>
+
+        <div class="checkbox-container">
+            <input type="checkbox" id="check-origine" onchange="basculerOrigine()">
+            <label for="check-origine" style="margin: 0; color: white; cursor: pointer; font-weight: bold;">Comparer avec la courbe d'origine constructeur</label>
+        </div>
+
+        <div class="grid" style="margin-top: 20px;">
+            <button class="btn btn-success" onclick="sauvegarderGraphique()">Sauvegarder l'image</button>
+            <button class="btn" onclick="recommencerTir()" style="background-color: #334155; color: white;">Nouveau Tir</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- BASE DE DONNÉES VÉHICULES ---
+    const dbVehicules = {
+        e46_320d: { masse: 1490, ratio: 1.54, pneus: "225/45/17", orig_p: 150, orig_c: 330 },
+        e46_330d: { masse: 1595, ratio: 1.48, pneus: "225/45/17", orig_p: 204, orig_c: 410 },
+        ibiza_130: { masse: 1190, ratio: 1.32, pneus: "205/45/16", orig_p: 130, orig_c: 310 },
+        ibiza_cupra: { masse: 1215, ratio: 1.32, pneus: "205/40/17", orig_p: 160, orig_c: 330 },
+        golf_150: { masse: 1315, ratio: 1.34, pneus: "205/55/16", orig_p: 150, orig_c: 320 },
+        p307_90: { masse: 1200, ratio: 1.37, pneus: "195/65/15", orig_p: 90, orig_c: 215 },
+        p1007_90: { masse: 1215, ratio: 1.37, pneus: "195/50/16", orig_p: 90, orig_c: 215 }
+    };
+
+    let configCourante = { masse: 0, ratio: 0, circ: 0, vehiculeCle: "" };
+    let rapportEngage = false;
+    let simulateurInterval = null;
+    let vitesseSimulee = 0;
+    let donneesSession = { rpms: [], puissances: [], couples: [] };
+    let monGraphique = null;
+
+    // --- LOGIQUE CONFIGURATION ---
+    function chargerVehicule() {
+        const id = document.getElementById('car-select').value;
+        if(!id) return;
+        const v = dbVehicules[id];
+        document.getElementById('input-masse').value = v.masse;
+        document.getElementById('input-ratio').value = v.ratio;
+        document.getElementById('input-pneus').value = v.pneus;
+    }
+
+    function calculerCirconference(tailleStr) {
+        try {
+            const parts = tailleStr.split('/');
+            const largeur = parseFloat(parts[0]);
+            const flanc = parseFloat(parts[1]) / 100;
+            const jante = parseFloat(parts[2]) * 25.4;
+            const diametreMm = jante + (largeur * flanc * 2);
+            return (diametreMm * Math.PI) / 1000; // retour en mètres
+        } catch(e) {
+            return 1.95; // Valeur refuge par défaut
         }
     }
-}
 
-class VirtualDynoApp:
-    def __init__(self):
-        # Variables de configuration modifiables
-        self.masse_vehicule = 0.0
-        self.ratio_transmission = 0.0
-        self.taille_pneus = ""
-        self.circonference_roue = 0.0
+    function validerConfiguration() {
+        configCourante.masse = parseFloat(document.getElementById('input-masse').value);
+        configCourante.ratio = parseFloat(document.getElementById('input-ratio').value);
+        configCourante.circ = calculerCirconference(document.getElementById('input-pneus').value);
+        configCourante.vehiculeCle = document.getElementById('car-select').value;
+
+        document.getElementById('screen-config').classList.add('hidden');
+        document.getElementById('screen-dyno').classList.remove('hidden');
         
-        # État de l'acquisition
-        self.rapport_engage = 3  # Par défaut le rapport 3 est souvent estimé / utilisé
-        self.vitesse_gps = 0.0
-        self.rpm = 0
-        self.historique_tirs = []
+        // Reset l'interface dyno
+        vitesseSimulee = 35; 
+        majAffichageTelemetrie(vitesseSimulee);
+    }
+
+    function retourConfig() {
+        clearInterval(simulateurInterval);
+        document.getElementById('screen-dyno').classList.add('hidden');
+        document.getElementById('screen-config').classList.remove('hidden');
+    }
+
+    // --- LOGIQUE TELEMETRIE & RPM ---
+    function majAffichageTelemetrie(vitesseKmh) {
+        document.getElementById('val-gps').innerText = vitesseKmh.toFixed(1);
         
-    # ==========================================
-    # 2. SELECTION ET PRE-REMPLISSAGE MODIFIABLE
-    # ==========================================
-    def selectionner_vehicule(self, marque, modele, annee):
-        try:
-            data = VEHICLE_DATABASE[marque][modele][annee]
-            print(f"\n--- Véhicule Sélectionné : {marque} {modele} ({annee}) ---")
-            print(f"Moteur : {data['moteur']} | Puissance d'origine : {data['puissance_orig']} cv")
+        if (rapportEngage) {
+            // Formule mathématique pure liant vitesse linéaire, pneus et ratio de boîte
+            const vitesseMMin = (vitesseKmh * 1000) / 60;
+            const rpmRoue = vitesseMMin / configCourante.circ;
+            // 3.9 représente ici un ratio moyen de pont différentiel d'origine
+            const rpmMoteur = Math.round(rpmRoue * configCourante.ratio * 3.9); 
+            document.getElementById('val-rpm').innerText = rpmMoteur;
+            return rpmMoteur;
+        } else {
+            document.getElementById('val-rpm').innerText = "0";
+            return 0;
+        }
+    }
+
+    function basculerRapport() {
+        const btn = document.getElementById('btn-rapport');
+        if(!rapportEngage) {
+            rapportEngage = true;
+            btn.innerText = "Rapport 3 Engagé ✓";
+            btn.className = "btn btn-success";
+            document.getElementById('procedure-area').classList.remove('hidden');
             
-            # Pré-remplissage des données
-            self.masse_vehicule = data["masse"]
-            self.ratio_transmission = data["ratio_rapport"]
-            self.taille_pneus = data["pneus"]
+            // On lance la mise à jour passive (simule les données issues d'une antenne GPS)
+            simulateurInterval = setInterval(() => {
+                majAffichageTelemetrie(vitesseSimulee);
+            }, 300);
+        } else {
+            rapportEngage = false;
+            btn.innerText = "Engager Rapport 3";
+            btn.className = "btn btn-danger";
+            document.getElementById('procedure-area').classList.add('hidden');
+            clearInterval(simulateurInterval);
+            majAffichageTelemetrie(vitesseSimulee);
+        }
+    }
+
+    // --- SEQUENCE DE TIR AUTOMATISÉE ---
+    function lancerChronologieTir() {
+        const statusBox = document.getElementById('procedure-status');
+        const btnStart = document.getElementById('btn-start-tir');
+        
+        btnStart.classList.add('hidden');
+        statusBox.classList.remove('hidden');
+        
+        // Phase 1 : Stabilisation
+        vitesseSimulee = 40; // ~ 1500 RPM
+        let t = 3;
+        statusBox.className = "status-stabilise";
+        
+        let compteARebours = setInterval(() => {
+            statusBox.innerText = `STABILISATION EN COURS... ${t}s`;
+            t--;
+            if(t < 0) {
+                clearInterval(compteARebours);
+                phasePleineCharge();
+            }
+        }, 1000);
+    }
+
+    function phasePleineCharge() {
+        const statusBox = document.getElementById('procedure-status');
+        statusBox.className = "status-wOT";
+        statusBox.innerText = "ACCÉLÉREZ À FOND !!!";
+        
+        donneesSession = { rpms: [], puissances: [], couples: [] };
+        clearInterval(simulateurInterval);
+
+        // Simulation de l'accélération brutale pied au plancher jusqu'à zone rouge
+        simulateurInterval = setInterval(() => {
+            vitesseSimulee += 4.5; // Gain de vitesse
+            let rpm = majAffichageTelemetrie(vitesseSimulee);
             
-            # Calcul automatique de la circonférence du pneu
-            self.circonference_roue = self._calculer_circonference(self.taille_pneus)
-            
-            self.afficher_parametres_actuels()
-        except KeyError:
-            print("Erreur : Véhicule introuvable dans la bibliothèque.")
+            if(rpm > 1800 && rpm < 4800) {
+                // Algorithme d'acquisition mathématique de la puissance (Courbe physique simulée cohérente)
+                let facteurForme = Math.sin((rpm - 1500) / 2000);
+                let gainMultiplicateur = configCourante.vehiculeCle ? dbVehicules[configCourante.vehiculeCle].orig_p / 130 : 1;
+                
+                let cvEstime = Math.round((facteurForme * 125 + (rpm/40)) * gainMultiplicateur);
+                if(cvEstime < 0) cvEstime = 10;
+                let coupleEstime = Math.round((cvEstime * 7023) / rpm);
 
-    def _calculer_circonference(self, chaine_pneu):
-        # Exemple : "225/45/17" -> Largeur: 225mm, Flanc: 45%, Jante: 17 pouces
-        parts = chaine_pneu.split('/')
-        largeur = float(parts[0])
-        flanc_pourcent = float(parts[1])
-        jante_pouces = float(parts[2])
-        
-        hauteur_flanc = (largeur * (flanc_pourcent / 100)) / 1000 # en mètres
-        diametre_jante = (jante_pouces * 25.4) / 1000 # en mètres
-        diametre_total = diametre_jante + (2 * hauteur_flanc)
-        
-        return math.pi * diametre_total
+                donneesSession.rpms.push(rpm);
+                donneesSession.puissances.push(cvEstime);
+                donneesSession.couples.push(coupleEstime);
+            }
 
-    def modifier_parametre_individuel(self, champ, nouvelle_valeur):
-        """Permet à l'utilisateur de modifier à la main n'importe quelle valeur pré-remplie"""
-        if champ == "masse":
-            self.masse_vehicule = float(nouvelle_valeur)
-        elif champ == "ratio":
-            self.ratio_transmission = float(nouvelle_valeur)
-        elif champ == "pneus":
-            self.taille_pneus = nouvelle_valeur
-            self.circonference_roue = self._calculer_circonference(nouvelle_valeur)
-        print(f"-> Paramètre '{champ}' mis à jour.")
+            if(rpm >= 4600) { // Fin de plage / Rupteur atteint
+                clearInterval(simulateurInterval);
+                phaseDebrayage();
+            }
+        }, 150);
+    }
 
-    def afficher_parametres_actuels(self):
-        print(f"[CONFIGURATION ACTUELLE] Masse: {self.masse_vehicule} kg | Rapport Estimé: {self.ratio_transmission} | Pneus: {self.taille_pneus} (Circ: {self.circonference_roue:.3f}m)")
+    function phaseDebrayage() {
+        const statusBox = document.getElementById('procedure-status');
+        statusBox.className = "status-debrayer";
+        statusBox.innerText = "DÉBRAYEZ ! FIN DE PROCÉDURE.";
+        
+        setTimeout(() => {
+            document.getElementById('screen-dyno').classList.add('hidden');
+            document.getElementById('screen-graph').classList.remove('hidden');
+            construireGraphique();
+        }, 2000);
+    }
 
-    # ==========================================
-    # 3. CONVERSION VITESSE GPS -> RPM VIRTUEL
-    # ==========================================
-    def mettre_a_jour_vitesse_gps(self, vitesse_kmh, rapport_active=False):
-        self.vitesse_gps = vitesse_kmh
-        if rapport_active:
-            # Calcul direct des RPM basé sur la vitesse GPS et la démultiplication
-            # Vitesse (m/min) = (Vitesse km/h * 1000) / 60
-            vitesse_m_min = (vitesse_kmh * 1000) / 60
-            rotation_roue_min = vitesse_m_min / self.circonference_roue
-            
-            # RPM Moteur = Rotation Roue * Ratio global du rapport engagé
-            self.rpm = int(rotation_roue_min * self.ratio_transmission * 4.1) # Note : 4.1 simule ici le ratio de pont final
-        else:
-            self.rpm = 0
+    // --- DESIGN ET AFFICHAGE DES GRAPHIQUES ---
+    function construireGraphique() {
+        const ctx = document.getElementById('dynoChart').getContext('2d');
+        document.getElementById('check-origine').checked = false;
 
-    # ==========================================
-    # 4. PROCÉDURE DE TIR AUTOMATISÉE
-    # ==========================================
-    def lancer_procedure_tir(self):
-        print("\n=== DÉBUT DE LA PROCÉDURE DE TIR ===")
-        print(f"Rapport d'application engagé : Rapport {self.rapport_engage}")
-        
-        # Step 1 : Stabilisation
-        print("\n[ÉTAPPE 1] Stabilisez le régime à 1500 tr/min...")
-        for i in range(3, 0, -1):
-            print(f"Maintien stable... {i}s (RPM virtuels détectés : {self.rpm})")
-            time.sleep(1)
-            
-        # Step 2 : Accélération Pleine Charge
-        print("\n !!! ACCÉLÉREZ À FOND !!! [Pied au plancher]")
-        donnees_tir = []
-        
-        # Simulation d'une montée en régime (en situation réelle, alimenté par le GPS)
-        sim_vitesse = 45.0
-        while sim_vitesse < 120.0:
-            self.mettre_a_jour_vitesse_gps(sim_vitesse, rapport_active=True)
-            timestamp = time.time()
-            donnees_tir.append((timestamp, self.rpm, self.vitesse_gps))
-            
-            print(f" Enregistrement -> {self.rpm} tr/min | {self.vitesse_gps:.1f} km/h")
-            sim_vitesse += 15.0 # Simulation accélération brute
-            time.sleep(0.4)
-            
-        # Step 3 : Fin et Débrayage
-        print("\n[ÉTAPE 3] DÉBRAYEZ ! Lâchez les gaz.")
-        print("=== FIN DE LA PROCÉDURE DE MESURE ===")
-        
-        # Basculement automatique sur le traitement graphique
-        self.generer_et_afficher_graphique(donnees_tir)
+        if(monGraphique) monGraphique.destroy();
 
-    # ==========================================
-    # 5. GRAPHIQUE ET ANALYSE COMPARATIVE
-    # ==========================================
-    def generer_et_afficher_graphique(self, donnees):
-        print("\n=== ÉCRAN GRAPHIQUE INTERACTIF ===")
-        print("Génération de la courbe [Régime (RPM) / Couple (Nm) / Puissance (ch)]...")
-        
-        # Ici l'algorithme calcule Couple = Force * Rayon de roue, Puissance = Couple * Régime
-        # Stockage pour comparaison future
-        self.historique_tirs.append(donnees)
-        print("-> Graphique enregistré localement dans l'application.")
-        print("-> Graphique exporté et sauvegardé dans la galerie du téléphone (Format Image/PNG).")
-        
-    def option_comparer_origine(self, marque, modele, annee):
-        """Superpose les courbes d'origine constructeur stockées en bibliothèque"""
-        data = VEHICLE_DATABASE[marque][modele][annee]
-        print(f"\n[MODE COMPARATIF ACTIF]")
-        print(f"Superposition active : Courbe constructeur théorique de référence ({data['puissance_orig']} cv) affichée en arrière-plan.")
+        monGraphique = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: donneesSession.rpms,
+                datasets: [
+                    {
+                        label: 'Puissance (ch)',
+                        data: donneesSession.puissances,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'transparent',
+                        yAxisID: 'yPuissance',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Couple (Nm)',
+                        data: donneesSession.couples,
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        yAxisID: 'yCouple',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'Régime Moteur (RPM)', color: '#94a3b8' }, grid: { color: '#334155' } },
+                    yPuissance: { position: 'left', title: { display: true, text: 'Puissance (ch)' }, grid: { color: '#334155' } },
+                    yCouple: { position: 'right', title: { display: true, text: 'Couple (Nm)' }, grid: { display: false } }
+                }
+            }
+        });
+    }
 
-# ==========================================
-# TEST DU FLUX APPLICATIF UTILISATEUR
-# ==========================================
-if __name__ == "__main__":
-    dyno = VirtualDynoApp()
-    
-    # 1. Sélection de la voiture dans la bibliothèque
-    dyno.selectionner_vehicule("PEUGEOT", "307 HDI", "2005")
-    
-    # 2. L'utilisateur ajuste la masse car il a un passager de 80kg
-    dyno.modifier_parametre_individuel("masse", 1280)
-    
-    # 3. Activation du bouton "Rapport engagé" et lecture GPS en roulant
-    dyno.mettre_a_jour_vitesse_gps(45.0, rapport_active=True)
-    
-    # 4. Lancement de la procédure de tir
-    dyno.lancer_procedure_tir()
-    
-    # 5. Comparaison avec les données d'origine constructeur
-    dyno.option_comparer_origine("PEUGEOT", "307 HDI", "2005")
+    function basculerOrigine() {
+        const actif = document.getElementById('check-origine').checked;
+        const cle = configCourante.vehiculeCle;
+        
+        if(actif && cle && dbVehicules[cle]) {
+            const pOrig = dbVehicules[cle].orig_p;
+            const cOrig = dbVehicules[cle].orig_c;
+
+            // Génération de courbes d'origine basées sur les spécifications constructeur
+            let origPData = donneesSession.rpms.map(rpm => Math.round((Math.sin((rpm - 1500) / 2100) * (pOrig * 0.8) + (rpm/60))));
+            let origCData = origPData.map((p, idx) => Math.round((p * 7023) / donneesSession.rpms[idx]));
+
+            monGraphique.data.datasets.push({
+                label: 'Puissance Origine (Constructeur)',
+                data: origPData,
+                borderColor: '#ef4444',
+                borderDash: [5, 5],
+                backgroundColor: 'transparent',
+                yAxisID: 'yPuissance',
+                tension: 0.3
+            });
+            monGraphique.data.datasets.push({
+                label: 'Couple Origine (Constructeur)',
+                data: origCData,
+                borderColor: '#f59e0b',
+                borderDash: [5, 5],
+                backgroundColor: 'transparent',
+                yAxisID: 'yCouple',
+                tension: 0.3
+            });
+        } else {
+            // Supprime les courbes d'origine si décoché
+            if(monGraphique.data.datasets.length > 2) {
+                monGraphique.data.datasets.splice(2, 2);
+            }
+        }
+        monGraphique.update();
+    }
+
+    function sauvegarderGraphique() {
+        const imageURI = monGraphique.toBase64Image();
+        const link = document.createElement('a');
+        link.download = 'mon_tir_virtual_dyno.png';
+        link.href = imageURI;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        alert("Graphique enregistré dans votre dossier de téléchargement / galerie !");
+    }
+
+    function recommencerTir() {
+        document.getElementById('screen-graph').classList.add('hidden');
+        document.getElementById('screen-dyno').classList.remove('hidden');
+        document.getElementById('btn-start-tir').classList.remove('hidden');
+        document.getElementById('procedure-status').classList.add('hidden');
+        vitesseSimulee = 35;
+        majAffichageTelemetrie(vitesseSimulee);
+    }
+</script>
+
+</body>
+</html>
