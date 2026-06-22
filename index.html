@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SST DYNOMANAGER EVO</title>
+    <title>SST DYNOMANAGER ORIENTATION</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -14,49 +14,78 @@
         }
 
         /* NAVIGATION MOBILE */
-        .app-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; background: #111420; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .app-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; background: #111420; border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 10; }
         .tab-btn { padding: 15px 5px; text-align: center; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #5c6275; border: none; background: none; cursor: pointer; }
         .tab-btn.active { color: #00f3ff; border-bottom: 3px solid #00f3ff; background: rgba(0,243,255,0.03); }
 
-        .app-view { display: none; padding: 20px; flex-direction: column; gap: 15px; flex-grow: 1; }
+        .app-view { display: none; padding: 15px; flex-direction: column; gap: 12px; flex-grow: 1; }
         .app-view.active { display: flex; }
 
         /* PANNEAUX ET BLOCS FORMULAIRES */
-        .panel { background: #111420; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 18px; }
-        .panel-title { font-size: 0.75rem; font-weight: 700; color: #a0a5b5; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .panel { background: #111420; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
+        .panel-title { font-size: 0.75rem; font-weight: 700; color: #a0a5b5; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         
-        .form-group { margin-bottom: 12px; }
+        .form-group { margin-bottom: 10px; }
         label { display: block; font-size: 0.65rem; color: #8e94a6; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
-        select, input { width: 100%; background: #07090e; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 12px; font-size: 0.9rem; }
+        select, input { width: 100%; background: #07090e; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 10px; font-size: 0.9rem; }
         .tire-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
         /* BOUTONS ACTIONS */
-        .btn { width: 100%; background: #fff; color: #000; border: none; padding: 16px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; margin-top: 10px; }
+        .btn { width: 100%; background: #fff; color: #000; border: none; padding: 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; }
         .btn-abort { background: #ff3b30 !important; color: #fff !important; }
 
-        /* ÉCRAN 2 : COCKPIT DE TIR */
-        .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .cockpit-card { background: #111420; padding: 15px 10px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
+        /* ÉCRAN 2 : COCKPIT DE TIR DE BASE (PORTRAIT) */
+        .cockpit-layout { display: flex; flex-direction: column; gap: 12px; }
+        .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cockpit-card { background: #111420; padding: 12px 8px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
         .cockpit-card.full-span { grid-column: span 2; }
-        .val-large { font-size: 2.5rem; font-weight: 800; font-family: monospace; color: #fff; line-height: 1; }
-        .val-lbl { font-size: 0.65rem; color: #8e94a6; text-transform: uppercase; margin-top: 6px; font-weight: bold; }
+        .val-large { font-size: 2.3rem; font-weight: 800; font-family: monospace; color: #fff; line-height: 1; }
+        .val-lbl { font-size: 0.6rem; color: #8e94a6; text-transform: uppercase; margin-top: 4px; font-weight: bold; }
 
-        .instruction-banner { background: #000; border: 2px solid #333; padding: 25px 15px; border-radius: 12px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
-        .inst-main { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; }
-        .inst-sub { font-size: 0.85rem; color: #8e94a6; margin-top: 4px; }
+        .instruction-banner { background: #000; border: 2px solid #333; padding: 20px 15px; border-radius: 12px; text-align: center; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+        .inst-main { font-size: 1.4rem; font-weight: 800; text-transform: uppercase; }
+        .inst-sub { font-size: 0.8rem; color: #8e94a6; margin-top: 4px; }
 
-        .gauge-holder { width: 100%; height: 20px; background: #1a1d29; border-radius: 10px; overflow: hidden; margin-top: 15px; border: 1px solid rgba(255,255,255,0.08); }
+        .gauge-holder { width: 100%; height: 16px; background: #1a1d29; border-radius: 10px; overflow: hidden; margin-top: 10px; border: 1px solid rgba(255,255,255,0.08); }
         .gauge-fill { width: 0%; height: 100%; background: #ff9500; transition: width 0.1s linear; }
         .gauge-fill.stable { background: #34c759 !important; }
 
+        .trigger-zone { display: flex; flex-direction: column; gap: 8px; }
+
         /* ÉCRAN 3 : GRAPHIQUE COMPARATIF */
-        .chart-frame { width: 100%; height: 350px; margin-top: 10px; background: #111420; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .chart-frame { width: 100%; height: 320px; margin-top: 10px; background: #111420; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .legend-indicator { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 0.7rem; justify-content: center; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
-        .legend-line { width: 20px; height: 3px; }
+        .legend-line { width: 15px; height: 3px; }
 
-        .history-box { max-height: 110px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .history-box { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
         .history-row { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 0.75rem; align-items: center; }
+
+        /* ==========================================================================
+           MODIFICATIONS SPECIFIQUES POUR L'ECRAN A L'HORIZONTALE (PAYSAGE / LANDSCAPE)
+           ========================================================================== */
+        @media (orientation: landscape) {
+            .app-view { padding: 10px 20px; gap: 10px; }
+            
+            /* Écran de Configuration en 2 colonnes */
+            #view0 { display: none; }
+            #view0.active { display: grid; grid-template-columns: 1.2fr 1fr; gap: 15px; align-items: start; }
+            #view0 .btn { margin-top: 25px; }
+
+            /* Écran de Tir optimisé pour le pare-brise / support voiture */
+            .cockpit-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 15px; align-items: center; }
+            .cockpit-grid { grid-template-columns: repeat(4, 1fr); }
+            .cockpit-card.full-span { grid-column: span 4; padding: 6px; }
+            .val-large { font-size: 2rem; }
+            .instruction-banner { min-height: 110px; padding: 10px; }
+            .inst-main { font-size: 1.2rem; }
+
+            /* Écran d'analyse avec graphique plus large et moins haut */
+            #view2 { display: none; }
+            #view2.active { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+            .chart-frame { height: 180px; }
+            .history-box { max-height: 120px; }
+        }
     </style>
 </head>
 <body>
@@ -117,60 +146,62 @@
                     <input type="number" id="tire-r" value="16">
                 </div>
             </div>
-            <div class="form-group"><label>Ratio de boîte du rapport engagé ($R_b$)</label><input type="number" step="0.001" id="gear-ratio" value="1.405"></div>
-            <div class="form-group"><label>Ratio de démultiplication de pont ($R_p$)</label><input type="number" step="0.001" id="final-ratio" value="3.380"></div>
-            <div class="form-group"><label>Masse mesurée en charge (kg)</label><input type="number" id="car-weight" value="1450"></div>
+            <div class="form-group"><label>Ratio de boîte ($R_b$)</label><input type="number" step="0.001" id="gear-ratio" value="1.405"></div>
+            <div class="form-group"><label>Ratio de pont ($R_p$)</label><input type="number" step="0.001" id="final-ratio" value="3.380"></div>
+            <div class="form-group"><label>Masse totale en charge (kg)</label><input type="number" id="car-weight" value="1450"></div>
         </div>
-        <button class="btn" onclick="switchView(1)">Étape Suivante : Passer au Tir ➔</button>
+        <button class="btn" onclick="switchView(1)">Étape Suivante : Le Tir ➔</button>
     </div>
 
     <div class="app-view" id="view1">
-        <div class="cockpit-grid">
-            <div class="cockpit-card"><div class="val-large" id="hud-rpm">0</div><div class="val-lbl">Tr/min</div></div>
-            <div class="cockpit-card"><div class="val-large" id="hud-speed">0.0</div><div class="val-lbl">Km/h</div></div>
-            <div class="cockpit-card"><div class="val-large" id="hud-hp" style="color: #00f3ff;">0</div><div class="val-lbl">P. Inst (ch)</div></div>
-            <div class="cockpit-card"><div class="val-large" id="hud-nm" style="color: #ff3b30;">0</div><div class="val-lbl">C. Inst (Nm)</div></div>
-            <div class="cockpit-card full-span" style="background: rgba(255,255,255,0.01)"><div class="val-large" id="hud-gear" style="font-size: 1.8rem; color: #ff9500;">--</div><div class="val-lbl">Rapport de boîte imposé</div></div>
-        </div>
+        <div class="cockpit-layout">
+            
+            <div class="cockpit-grid">
+                <div class="cockpit-card"><div class="val-large" id="hud-rpm">0</div><div class="val-lbl">Tr/min</div></div>
+                <div class="cockpit-card"><div class="val-large" id="hud-speed">0.0</div><div class="val-lbl">Km/h</div></div>
+                <div class="cockpit-card"><div class="val-large" id="hud-hp" style="color: #00f3ff;">0</div><div class="val-lbl">P. Inst (ch)</div></div>
+                <div class="cockpit-card"><div class="val-large" id="hud-nm" style="color: #ff3b30;">0</div><div class="val-lbl">C. Inst (Nm)</div></div>
+                <div class="cockpit-card full-span" style="background: rgba(255,255,255,0.01)"><div class="val-large" id="hud-gear" style="font-size: 1.5rem; color: #ff9500;">--</div><div class="val-lbl">Rapport Imposé</div></div>
+            </div>
 
-        <div class="instruction-banner" id="inst-box">
-            <div class="inst-main" id="inst-main">DISPOSITIF EN ATTENTE</div>
-            <div class="inst-sub" id="inst-sub">Initialisez la procédure pour recevoir les consignes de conduite.</div>
-            <div class="gauge-holder" id="gauge-zone" style="display: none;"><div class="gauge-fill" id="gauge-inner"></div></div>
-        </div>
+            <div class="trigger-zone">
+                <div class="instruction-banner" id="inst-box">
+                    <div class="inst-main" id="inst-main">DISPOSITIF EN ATTENTE</div>
+                    <div class="inst-sub" id="inst-sub">Initialisez la procédure pour recevoir les consignes.</div>
+                    <div class="gauge-holder" id="gauge-zone" style="display: none;"><div class="gauge-fill" id="gauge-inner"></div></div>
+                </div>
 
-        <button class="btn" id="btn-action" onclick="handleSequenceStep()">Démarrer la Procédure</button>
-        <button class="btn btn-abort" id="btn-abort" onclick="abortProcedure()" style="display: none;">⚠️ Interrompre le tir</button>
+                <button class="btn" id="btn-action" onclick="handleSequenceStep()">Démarrer la Procédure</button>
+                <button class="btn btn-abort" id="btn-abort" onclick="abortProcedure()" style="display: none;">⚠️ Interrompre</button>
+            </div>
+
+        </div>
     </div>
 
     <div class="app-view" id="view2">
-        <div class="cockpit-grid">
-            <div class="cockpit-card"><div class="val-large" id="res-hp" style="color: #00f3ff;">--</div><div class="val-lbl">Pmax Obtenu (ch)</div></div>
-            <div class="cockpit-card"><div class="val-large" id="res-nm" style="color: #ff3b30;">--</div><div class="val-lbl">Cmax Obtenu (Nm)</div></div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-title">Fenetre de Comparaison Constructeur vs Tir Réel</div>
-            <p style="font-size: 0.7rem; color: #8e94a6; margin-bottom: 5px;">👉 Balayez l'écran de votre doigt pour comparer les valeurs réelles aux données d'usine.</p>
-            
+        <div class="panel" style="display: flex; flex-direction: column; justify-content: center;">
+            <div class="cockpit-grid" style="margin-bottom: 5px;">
+                <div class="cockpit-card"><div class="val-large" id="res-hp" style="color: #00f3ff; font-size: 2rem;">--</div><div class="val-lbl">Pmax (ch)</div></div>
+                <div class="cockpit-card"><div class="val-large" id="res-nm" style="color: #ff3b30; font-size: 2rem;">--</div><div class="val-lbl">Cmax (Nm)</div></div>
+            </div>
+            <div class="panel-title" style="margin-top: 5px; font-size:0.65rem;">Comparaison Constructeur / Tir Réel</div>
             <div class="chart-frame"><canvas id="dynoChart"></canvas></div>
             
             <div class="legend-indicator">
                 <div class="legend-item"><div class="legend-line" style="background:#00f3ff;"></div> <span>P. Réelle</span></div>
-                <div class="legend-item"><div class="legend-line" style="border-top:2px dashed rgba(0,243,255,0.5);"></div> <span style="color:#8e94a6;">P. Usine</span></div>
+                <div class="legend-item"><div class="legend-line" style="border-top:2px dashed rgba(0,243,255,0.5);"></div> <span style="color:#8e94a6;">Usine</span></div>
                 <div class="legend-item"><div class="legend-line" style="background:#ff3b30;"></div> <span>C. Réel</span></div>
-                <div class="legend-item"><div class="legend-line" style="border-top:2px dashed rgba(255,59,48,0.5);"></div> <span style="color:#8e94a6;">C. Usine</span></div>
+                <div class="legend-item"><div class="legend-line" style="border-top:2px dashed rgba(255,59,48,0.5);"></div> <span style="color:#8e94a6;">Usine</span></div>
             </div>
         </div>
 
         <div class="panel">
-            <div class="panel-title">Fichiers Historiques d'Acquisition</div>
+            <div class="panel-title">Historique des Essais</div>
             <div class="history-box" id="history-container"></div>
         </div>
     </div>
 
     <script>
-        // BASE DE DONNÉES DES MOTORISATIONS COURANTES RESTRUCTURÉE selon tes directives
         const dbVehicules = {
             "p1007_hdi": { w: 195, h: 50, r: 16, gear: 1.321, final: 3.530, target: "3ème", weight: 1261, maxRpm: 4500, type: 'd', name: "1007 1.6HDi DV6 (2007)", factoryHp: 110, factoryNm: 240, pPeakRpm: 4000, cPeakRpm: 1750 },
             "p307_hdi_90": { w: 195, h: 65, r: 15, gear: 1.026, final: 3.684, target: "4ème", weight: 1290, maxRpm: 4500, type: 'd', name: "307 1.6HDi DV69HX (2007)", factoryHp: 90, factoryNm: 215, pPeakRpm: 4000, cPeakRpm: 1750 },
@@ -185,7 +216,7 @@
             "e46_330d": { w: 225, h: 45, r: 17, gear: 1.190, final: 2.470, target: "4ème", weight: 1615, maxRpm: 4600, type: 'd', name: "E46 330d M57TU (2003)", factoryHp: 204, factoryNm: 410, pPeakRpm: 4000, cPeakRpm: 1500 },
             "golf4_tdi_90": { w: 195, h: 65, r: 15, gear: 0.917, final: 3.389, target: "4ème", weight: 1250, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ALH (1998)", factoryHp: 90, factoryNm: 210, pPeakRpm: 4000, cPeakRpm: 1900 },
             "golf4_tdi_110": { w: 195, h: 65, r: 15, gear: 0.917, final: 3.389, target: "4ème", weight: 1280, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ASV (2000)", factoryHp: 110, factoryNm: 235, pPeakRpm: 4100, cPeakRpm: 1900 },
-            "golf4_tdi_130": { w: 205, h: 55, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1320, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI Inject.-P (2002)", factoryHp: 130, factoryNm: 310, pPeakRpm: 4000, cPeakRpm: 1900 },
+            "golf4_tdi_130": { w: 205, h: 55, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1320, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI (2002)", factoryHp: 130, factoryNm: 310, pPeakRpm: 4000, cPeakRpm: 1900 },
             "golf4_tdi_150": { w: 205, h: 55, r: 16, gear: 0.912, final: 3.100, target: "4ème", weight: 1350, maxRpm: 4500, type: 'd', name: "Golf 4 1.9TDI ARL (2003)", factoryHp: 150, factoryNm: 320, pPeakRpm: 4000, cPeakRpm: 1900 },
             "golf5_tdi_105": { w: 195, h: 65, r: 15, gear: 0.880, final: 3.390, target: "4ème", weight: 1370, maxRpm: 4500, type: 'd', name: "Golf 5 1.9TDI BLS (2005)", factoryHp: 105, factoryNm: 250, pPeakRpm: 4000, cPeakRpm: 1900 },
             "golf6_tdi_140": { w: 205, h: 55, r: 16, gear: 0.860, final: 3.450, target: "4ème", weight: 1410, maxRpm: 4500, type: 'd', name: "Golf 6 2.0TDI CBAB (2010)", factoryHp: 140, factoryNm: 320, pPeakRpm: 4200, cPeakRpm: 1750 },
@@ -207,9 +238,17 @@
         };
 
         function switchView(index) {
-            document.querySelectorAll('.app-view').forEach((v, i) => v.classList.toggle('active', i === index));
+            document.querySelectorAll('.app-view').forEach((v, i) => {
+                v.style.display = (i === index) ? (window.innerWidth > window.innerHeight && index === 0 ? 'grid' : (window.innerWidth > window.innerHeight && index === 2 ? 'grid' : 'flex')) : 'none';
+                v.classList.toggle('active', i === index);
+            });
             document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === index));
         }
+
+        window.addEventListener('resize', () => {
+            const activeIndex = Array.from(document.querySelectorAll('.tab-btn')).findIndex(b => b.classList.contains('active'));
+            switchView(activeIndex);
+        });
 
         function applyVehicleSpecs() {
             const select = document.getElementById('car-select').value;
@@ -247,14 +286,14 @@
                 currentStep = 1;
                 document.getElementById('btn-abort').style.display = 'block';
                 document.getElementById('inst-main').innerText = `ENGAGEZ LA ${targetGear.toUpperCase()}`;
-                document.getElementById('inst-sub').innerText = "Abaissez votre régime puis validez la stabilisation.";
+                document.getElementById('inst-sub').innerText = "Abaissez le régime puis validez.";
                 actionBtn.innerText = "Rapport engagé, stabiliser ➔";
             } 
             else if (currentStep === 1) {
                 currentStep = 2;
                 document.getElementById('gauge-zone').style.display = 'block';
                 document.getElementById('inst-main').innerText = "STABILISATION 2000 TR/MIN";
-                document.getElementById('inst-sub').innerText = "Maintenez l'aiguille stable pendant 2 secondes.";
+                document.getElementById('inst-sub').innerText = "Maintenez stable pendant 2 secondes.";
                 actionBtn.style.display = 'none';
 
                 if (navigator.geolocation) {
@@ -276,7 +315,6 @@
             const maxRpm = carKey !== 'custom' ? dbVehicules[carKey].maxRpm : 4500;
             const isDiesel = carKey !== 'custom' && dbVehicules[carKey].type === 'd';
 
-            // SIMULATION AVEC RENDEMENT ROUTE RÉEL COMPTE TENU DU PATINAGE
             let instantHp = 0;
             if (rpm > 1500) {
                 let baseHp = carKey !== 'custom' ? dbVehicules[carKey].factoryHp : 100;
@@ -303,7 +341,7 @@
                         document.getElementById('gauge-zone').style.display = 'none';
                         document.getElementById('inst-main').innerText = "🔥 À FOND !!! 🔥";
                         document.getElementById('inst-main').style.color = "#ff9500";
-                        document.getElementById('inst-sub').innerText = "Écrasez la pédale à 100% jusqu'à la coupure !";
+                        document.getElementById('inst-sub').innerText = "Écrasez la pédale à 100% !";
                     }
                 } else {
                     bar.classList.remove('stable');
@@ -318,7 +356,7 @@
                     currentStep = 4;
                     document.getElementById('inst-main').innerText = "🛑 DÉBRAYEZ !";
                     document.getElementById('inst-main').style.color = "#ff3b30";
-                    document.getElementById('inst-sub').innerText = "Pédale d'embrayage enfoncée à fond immédiatement.";
+                    document.getElementById('inst-sub').innerText = "Enfoncez l'embrayage immédiatement !";
                 }
             } 
             else if (currentStep === 4) {
@@ -347,8 +385,7 @@
             document.getElementById('res-hp').innerText = maxHp;
             document.getElementById('res-nm').innerText = maxNm;
 
-            let factoryHpCurve = [];
-            let factoryNmCurve = [];
+            let factoryHpCurve = []; let factoryNmCurve = [];
             
             rpms.forEach(rpm => {
                 let fHp = 0; let fNm = 0;
@@ -402,9 +439,9 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: { tooltip: { enabled: true }, legend: { display: false } },
                     scales: {
-                        x: { title: { display: true, text: 'Régime Moteur (tr/min)', color: '#8e94a6' }, grid: { color: 'rgba(255,255,255,0.02)' } },
-                        y: { position: 'left', title: { display: true, text: 'Puissance (ch)', color: '#00f3ff' }, grid: { color: 'rgba(255,255,255,0.02)' } },
-                        y1: { position: 'right', title: { display: true, text: 'Couple (Nm)', color: '#ff3b30' }, grid: { drawOnChartArea: false } }
+                        x: { title: { display: false }, grid: { color: 'rgba(255,255,255,0.02)' } },
+                        y: { position: 'left', title: { display: true, text: 'ch', color: '#00f3ff' }, grid: { color: 'rgba(255,255,255,0.02)' } },
+                        y1: { position: 'right', title: { display: true, text: 'Nm', color: '#ff3b30' }, grid: { drawOnChartArea: false } }
                     }
                 }
             });
@@ -413,10 +450,10 @@
         function displayTargetChart(data) {
             dynoChart.data.labels = data.labels;
             dynoChart.data.datasets = [
-                { label: 'Puissance Réelle', data: data.hp, borderColor: '#00f3ff', yAxisID: 'y', borderWidth: 3, pointRadius: 0 },
-                { label: 'Couple Réel', data: data.nm, borderColor: '#ff3b30', yAxisID: 'y1', borderWidth: 3, pointRadius: 0 },
-                { label: 'Puissance Usine', data: data.fHp, borderColor: 'rgba(0, 243, 255, 0.35)', yAxisID: 'y', borderWidth: 2, borderDash: [6, 4], pointRadius: 0 },
-                { label: 'Couple Usine', data: data.fNm, borderColor: 'rgba(255, 59, 48, 0.35)', yAxisID: 'y1', borderWidth: 2, borderDash: [6, 4], pointRadius: 0 }
+                { label: 'P. Réelle', data: data.hp, borderColor: '#00f3ff', yAxisID: 'y', borderWidth: 3, pointRadius: 0 },
+                { label: 'C. Réel', data: data.nm, borderColor: '#ff3b30', yAxisID: 'y1', borderWidth: 3, pointRadius: 0 },
+                { label: 'P. Usine', data: data.fHp, borderColor: 'rgba(0, 243, 255, 0.35)', yAxisID: 'y', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0 },
+                { label: 'C. Usine', data: data.fNm, borderColor: 'rgba(255, 59, 48, 0.35)', yAxisID: 'y1', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0 }
             ];
             dynoChart.update();
         }
@@ -425,13 +462,13 @@
             const container = document.getElementById('history-container');
             const logs = JSON.parse(localStorage.getItem('sst_dyno_logs')) || [];
             if(logs.length === 0) {
-                container.innerHTML = `<div style="font-size:0.7rem; color:#5c6275; text-align:center; padding:10px;">Aucune donnée enregistrée localement.</div>`;
+                container.innerHTML = `<div style="font-size:0.7rem; color:#5c6275; text-align:center; padding:10px;">Aucune donnée enregistrée.</div>`;
                 return;
             }
             container.innerHTML = logs.map(log => `
                 <div class="history-row" onclick="loadArchivedRun(${log.id})">
                     <div><strong>${log.vehicle}</strong> <span style="color:#5c6275; font-size:0.65rem;">${log.date}</span></div>
-                    <div><span style="color:#00f3ff; font-weight:bold;">${log.pMax} ch</span> / <span style="color:#ff3b30; font-weight:bold;">${log.cMax} Nm</span></div>
+                    <div><span style="color:#00f3ff; font-weight:bold;">${log.pMax}ch</span> / <span style="color:#ff3b30; font-weight:bold;">${log.cMax}Nm</span></div>
                 </div>
             `).join('');
         }
