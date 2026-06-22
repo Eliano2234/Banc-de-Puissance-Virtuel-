@@ -3,152 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SST — BANC DE PUISSANCE INERTIEL</title>
+    <title>SST DYNOMANAGER</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { 
-            background: #0b0d17; color: #f1f3f9; 
+            background: #07090e; color: #f1f3f9; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            padding: 15px; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
         }
-        .container { width: 100%; max-width: 1280px; display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media (min-width: 900px) {
-            .container { grid-template-columns: 1fr 1.2fr; }
-            .full-width { grid-column: span 2; }
-        }
-        .panel {
-            background: #121520; border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .panel-title {
-            font-size: 0.75rem; font-weight: 700; color: #00f3ff; text-transform: uppercase;
-            letter-spacing: 1.5px; margin-bottom: 15px; border-left: 3px solid #00f3ff; padding-left: 8px;
-        }
+
+        /* NAVIGATION PAR ONGLETS APPS MOBILE */
+        .app-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; background: #111420; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .tab-btn { padding: 15px 5px; text-align: center; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #5c6275; border: none; background: none; cursor: pointer; }
+        .tab-btn.active { color: #00f3ff; border-bottom: 3px solid #00f3ff; background: rgba(0,243,255,0.03); }
+
+        .app-view { display: none; padding: 20px; flex-direction: column; gap: 15px; flex-grow: 1; }
+        .app-view.active { display: flex; }
+
+        /* PANNEAUX ET FORMULAIRES */
+        .panel { background: #111420; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 18px; }
+        .panel-title { font-size: 0.75rem; font-weight: 700; color: #a0a5b5; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        
         .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.7rem; color: #8e94a6; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
-        select, input {
-            width: 100%; background: #07090f; border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 6px; color: #fff; padding: 10px; font-size: 0.85rem;
-        }
+        label { display: block; font-size: 0.65rem; color: #8e94a6; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+        select, input { width: 100%; background: #07090e; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 12px; font-size: 0.9rem; }
         .tire-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        
-        /* SEQUENCEUR D'INSTRUCTIONS */
-        .instruction-display {
-            background: #07090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 20px; text-align: center; margin: 15px 0; min-height: 150px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .inst-headline { font-size: 1.5rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
-        .inst-sub { font-size: 0.8rem; color: #8e94a6; margin-bottom: 10px; }
-        
-        /* JAUGE DE RPM EN DIRECT */
-        .gauge-container { width: 100%; height: 16px; background: #1a1d29; border-radius: 8px; overflow: hidden; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: none; }
-        .gauge-bar { width: 0%; height: 100%; background: #ff9500; transition: width 0.1s linear, background-color 0.2s; }
-        .gauge-bar.stable { background: #34c759 !important; }
 
-        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .card { background: rgba(255,255,255,0.02); border-radius: 8px; padding: 12px; text-align: center; }
-        .card-val { font-size: 1.6rem; font-weight: 700; font-family: monospace; }
-        .card-lbl { font-size: 0.6rem; color: #8e94a6; text-transform: uppercase; margin-top: 4px; }
+        /* BOUTONS ACTIONS */
+        .btn { width: 100%; background: #fff; color: #000; border: none; padding: 16px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; margin-top: 10px; }
+        .btn-abort { background: #ff3b30 !important; color: #fff !important; }
 
-        .btn {
-            width: 100%; background: #fff; color: #000; border: none; padding: 14px;
-            border-radius: 8px; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; cursor: pointer;
-        }
-        .btn-abort { background: #ff3b30 !important; color: #fff !important; display: none; margin-top: 8px; }
+        /* ÉCRAN DE TIR : ERGONOMIE COCKPIT EN GROS */
+        .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .cockpit-card { background: #111420; padding: 15px 10px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
+        .cockpit-card.full-span { grid-column: span 2; }
+        .val-large { font-size: 2.8rem; font-weight: 800; font-family: monospace; color: #fff; line-height: 1; }
+        .val-lbl { font-size: 0.65rem; color: #8e94a6; text-transform: uppercase; margin-top: 6px; font-weight: bold; letter-spacing: 0.5px; }
 
-        /* PANNEAU HISTORIQUE */
-        .history-list { max-height: 160px; overflow-y: auto; margin-top: 10px; }
-        .history-item {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            padding: 10px; border-radius: 6px; margin-bottom: 6px; display: flex;
-            justify-content: space-between; align-items: center; cursor: pointer; font-size: 0.8rem;
-        }
-        .history-item:hover { background: rgba(255,255,255,0.08); }
-        .history-meta { color: #8e94a6; font-size: 0.7rem; }
+        .instruction-banner { background: #000; border: 2px solid #333; padding: 25px 15px; border-radius: 12px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
+        .inst-main { font-size: 1.6rem; font-weight: 800; text-transform: uppercase; }
+        .inst-sub { font-size: 0.85rem; color: #8e94a6; margin-top: 4px; }
 
-        .chart-container { width: 100%; height: 320px; margin-top: 10px; }
+        .gauge-holder { width: 100%; height: 20px; background: #1a1d29; border-radius: 10px; overflow: hidden; margin-top: 15px; border: 1px solid rgba(255,255,255,0.08); }
+        .gauge-fill { width: 0%; height: 100%; background: #ff9500; transition: width 0.1s linear; }
+        .gauge-fill.stable { background: #34c759 !important; }
+
+        /* ÉCRAN BILAN POST-TIR */
+        .chart-frame { width: 100%; height: 340px; margin-top: 10px; background: #111420; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .history-box { max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .history-row { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 0.75rem; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        
+    <nav class="app-tabs">
+        <button class="tab-btn active" id="tab0" onclick="switchView(0)">⚙️ Config</button>
+        <button class="tab-btn" id="tab1" onclick="switchView(1)">🏁 Le Tir</button>
+        <button class="tab-btn" id="tab2" onclick="switchView(2)">📊 Courbes</button>
+    </nav>
+
+    <div class="app-view active" id="view0">
         <div class="panel">
-            <div>
-                <div class="panel-title">Paramètres Techniques d'Acquisition</div>
-                <div class="form-group">
-                    <label for="car-select">Véhicule Base de données</label>
-                    <select id="car-select" onchange="applyVehicleSpecs()">
-                        <option value="custom">-- Configuration manuelle --</option>
-                        <optgroup label="BMW Série 3 E46 (Essence)">
-                            <option value="e46_320i">BMW 320i (1998-2005) - Tir en 3e</option>
-                            <option value="e46_330i">BMW 330i (2000-2005) - Tir en 4e</option>
-                            <option value="e46_m3">BMW M3 3.2 E46 (2000-2006) - Tir en 4e</option>
-                        </optgroup>
-                        <optgroup label="BMW Série 3 E46 (Diesel)">
-                            <option value="e46_320d_150">BMW 320d 150ch (2001-2005) - Tir en 4e</option>
-                            <option value="e46_330d_204">BMW 330d 204ch (2003-2005) - Tir en 4e</option>
-                        </optgroup>
-                        <optgroup label="Peugeot">
-                            <option value="p306_s16">Peugeot 306 S16 BV6 (1996-2001) - Tir en 4e</option>
-                            <option value="p307_20_hdi">Peugeot 307 2.0 HDi 136ch (2003-2007) - Tir en 4e</option>
-                            <option value="p308_gti_200">Peugeot 308 GTI 200ch (2010-2013) - Tir en 4e</option>
-                            <option value="p1007_16">Peugeot 1007 1.6 16V 110ch (2005-2009) - Tir en 3e</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Pneumatiques (L / H / R)</label>
-                    <div class="tire-row">
-                        <input type="number" id="tire-w" value="205">
-                        <input type="number" id="tire-h" value="55">
-                        <input type="number" id="tire-r" value="16">
-                    </div>
-                </div>
-
-                <div class="form-group"><label>Ratio Démultiplication Rapport ($R_b$)</label><input type="number" step="0.001" id="gear-ratio" value="1.405"></div>
-                <div class="form-group"><label>Ratio Final de Pont ($R_p$)</label><input type="number" step="0.001" id="final-ratio" value="3.380"></div>
-                <div class="form-group"><label>Masse Totale en Charge (kg)</label><input type="number" id="car-weight" value="1450"></div>
+            <div class="panel-title">Fiche Véhicule</div>
+            <div class="form-group">
+                <label for="car-select">Sélectionner un modèle connu</label>
+                <select id="car-select" onchange="applyVehicleSpecs()">
+                    <option value="custom">-- Configuration manuelle --</option>
+                    <optgroup label="BMW Série 3 E46 (Essence)">
+                        <option value="e46_320i">BMW 320i (1998-2005) - 3e</option>
+                        <option value="e46_330i">BMW 330i (2000-2005) - 4e</option>
+                        <option value="e46_m3">BMW M3 3.2 E46 (2000-2006) - 4e</option>
+                    </optgroup>
+                    <optgroup label="BMW Série 3 E46 (Diesel)">
+                        <option value="e46_320d_150">BMW 320d 150ch (2001-2005) - 4e</option>
+                        <option value="e46_330d_204">BMW 330d 204ch (2003-2005) - 4e</option>
+                    </optgroup>
+                    <optgroup label="Peugeot">
+                        <option value="p306_s16">Peugeot 306 S16 BV6 (1996-2001) - 4e</option>
+                        <option value="p307_20_hdi">Peugeot 307 2.0 HDi 136ch - 4e</option>
+                        <option value="p308_gti_200">Peugeot 308 GTI 200ch - 4e</option>
+                        <option value="p1007_16">Peugeot 1007 1.6 16V 110ch - 3e</option>
+                    </optgroup>
+                </select>
             </div>
-
-            <div style="margin-top: 20px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-                <div class="panel-title" style="color: #8e94a6;">Historique des Tirs Sauvegardés</div>
-                <div class="history-list" id="history-container"></div>
+            <div class="form-group">
+                <label>Dimensions Pneus Motores</label>
+                <div class="tire-row">
+                    <input type="number" id="tire-w" value="205">
+                    <input type="number" id="tire-h" value="55">
+                    <input type="number" id="tire-r" value="16">
+                </div>
             </div>
+            <div class="form-group"><label>Ratio Démultiplication Rapport ($R_b$)</label><input type="number" step="0.001" id="gear-ratio" value="1.405"></div>
+            <div class="form-group"><label>Ratio de Pont ($R_p$)</label><input type="number" step="0.001" id="final-ratio" value="3.380"></div>
+            <div class="form-group"><label>Masse en charge totale (kg)</label><input type="number" id="car-weight" value="1450"></div>
+        </div>
+        <button class="btn" onclick="switchView(1)">Étape Suivante : Le Tir ➔</button>
+    </div>
+
+    <div class="app-view" id="view1">
+        <div class="cockpit-grid">
+            <div class="cockpit-card"><div class="val-large" id="hud-rpm">0</div><div class="val-lbl">Tr/min</div></div>
+            <div class="cockpit-card"><div class="val-large" id="hud-speed">0.0</div><div class="val-lbl">Km/h</div></div>
+            <div class="cockpit-card"><div class="val-large" id="hud-hp" style="color: #00f3ff;">0</div><div class="val-lbl">P. Inst (ch)</div></div>
+            <div class="cockpit-card"><div class="val-large" id="hud-nm" style="color: #ff3b30;">0</div><div class="val-lbl">C. Inst (Nm)</div></div>
+            <div class="cockpit-card full-span" style="background: rgba(255,255,255,0.01)"><div class="val-large" id="hud-gear" style="font-size: 2rem; color: #ff9500;">--</div><div class="val-lbl">Rapport à Engager</div></div>
+        </div>
+
+        <div class="instruction-banner" id="inst-box">
+            <div class="inst-main" id="inst-main">BANC INACTIF</div>
+            <div class="inst-sub" id="inst-sub">Appuyez ci-dessous pour démarrer le processus.</div>
+            <div class="gauge-holder" id="gauge-zone" style="display: none;"><div class="gauge-fill" id="gauge-inner"></div></div>
+        </div>
+
+        <button class="btn" id="btn-action" onclick="handleSequenceStep()">Démarrer la Procédure</button>
+        <button class="btn btn-abort" id="btn-abort" onclick="abortProcedure()" style="display: none;">⚠️ Annuler le tir</button>
+    </div>
+
+    <div class="app-view" id="view2">
+        <div class="cockpit-grid">
+            <div class="cockpit-card"><div class="val-large" id="res-hp" style="color: #00f3ff;">--</div><div class="val-lbl">Pmax Max (ch)</div></div>
+            <div class="cockpit-card"><div class="val-large" id="res-nm" style="color: #ff3b30;">--</div><div class="val-lbl">Couple Max (Nm)</div></div>
         </div>
 
         <div class="panel">
-            <div>
-                <div class="panel-title">Moniteur Séquentiel de Tir</div>
-                <div class="telemetry-grid">
-                    <div class="card"><div class="card-val" id="hud-rpm">0</div><div class="card-lbl">Régime Calculé (tr/min)</div></div>
-                    <div class="card"><div class="card-val" id="hud-speed">0.0</div><div class="card-lbl">Vitesse GPS (km/h)</div></div>
-                </div>
-
-                <div class="instruction-display" id="inst-box">
-                    <div class="inst-headline" id="inst-main">BANC PRÊT</div>
-                    <div class="inst-sub" id="inst-sub">Configurez la fiche véhicule puis initialisez l'acquisition.</div>
-                    <div class="gauge-container" id="gauge-zone"><div class="gauge-bar" id="gauge-inner"></div></div>
-                </div>
-            </div>
-
-            <div>
-                <button class="btn" id="btn-action" onclick="handleSequenceStep()">Initialiser le Tir</button>
-                <button class="btn btn-abort" id="btn-abort" onclick="abortProcedure()">Annuler la Procédure</button>
-
-                <div class="telemetry-grid" style="margin-top: 15px;">
-                    <div class="card" style="border-bottom: 2px solid #00f3ff;"><div class="card-val" id="res-hp">--</div><div class="card-lbl">Pmax (ch)</div></div>
-                    <div class="card" style="border-bottom: 2px solid #ff3b30;"><div class="card-val" id="res-nm">--</div><div class="card-lbl">Cmax (Nm)</div></div>
-                </div>
-            </div>
+            <div class="panel-title">Analyse Tactile des Courbes</div>
+            <p style="font-size: 0.7rem; color: #8e94a6; margin-bottom: 5px;">👉 Glissez votre doigt sur le graphique pour lire les valeurs correspondantes.</p>
+            <div class="chart-frame"><canvas id="dynoChart"></canvas></div>
         </div>
 
-        <div class="panel full-width">
-            <div class="panel-title">Analyse Graphique Tr/min / Puissance / Couple</div>
-            <div class="chart-container"><canvas id="dynoChart"></canvas></div>
+        <div class="panel">
+            <div class="panel-title">Précédents Essais Enregistrés</div>
+            <div class="history-box" id="history-container"></div>
         </div>
     </div>
 
@@ -165,30 +152,20 @@
             "p1007_16":  { w: 195, h: 50, r: 16, gear: 1.321, final: 4.058, target: "3ème", weight: 1261, maxRpm: 6000, type: 'i', name: "Peugeot 1007 1.6" }
         };
 
-        let currentStep = 0; // 0: Idle, 1: Attente Engagement Vitesse, 2: Stabilisation RPM, 3: Plein Gaz, 4: Débrayage Perte
-        let gpsWatch = null; let simulationTicker = null; let internalKmh = 0;
+        let currentStep = 0; 
+        let gpsWatch = null; let simInterval = null; let simKmh = 0;
         let loggedSamples = []; let dynoChart = null;
-        let stabilityTimerStart = null;
+        let stabilityTime = null;
 
         window.onload = function() {
-            initChart();
-            renderHistoryList();
+            initChartArchitecture();
+            renderHistoryLogs();
+            applyVehicleSpecs();
         };
 
-        function initChart() {
-            const ctx = document.getElementById('dynoChart').getContext('2d');
-            dynoChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { display: true, title: { display: true, text: 'Régime (tr/min)', color: '#8e94a6' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Puissance (ch)', color: '#00f3ff' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                        y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Couple (Nm)', color: '#ff3b30' }, grid: { drawOnChartArea: false } }
-                    }
-                }
-            });
+        function switchView(index) {
+            document.querySelectorAll('.app-view').forEach((v, i) => v.classList.toggle('active', i === index));
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === index));
         }
 
         function applyVehicleSpecs() {
@@ -201,7 +178,7 @@
             document.getElementById('gear-ratio').value = car.gear;
             document.getElementById('final-ratio').value = car.final;
             document.getElementById('car-weight').value = car.weight;
-            document.getElementById('inst-sub').innerText = `Rapport optimal détecté : Éclancer le véhicule en ${car.target}.`;
+            document.getElementById('hud-gear').innerText = car.target.toUpperCase();
         }
 
         function getWheelCircumference() {
@@ -218,38 +195,34 @@
             return Math.round(((kmh / 3.6) / getWheelCircumference()) * Rb * Rp * 60);
         }
 
-        // CONTROL SÉQUENTIEL DES ÉTAPES DE MESURE
         function handleSequenceStep() {
             const actionBtn = document.getElementById('btn-action');
             const carKey = document.getElementById('car-select').value;
-            const targetGear = carKey !== 'custom' ? dbVehicules[carKey].target : "votre rapport sélectionné";
+            const targetGear = carKey !== 'custom' ? dbVehicules[carKey].target : "votre rapport";
 
             if (currentStep === 0) {
-                // ÉTAPE 1 : DEMANDE ENGAGEMENT RAPPORT VIA CONSTANTE
                 currentStep = 1;
                 document.getElementById('btn-abort').style.display = 'block';
                 document.getElementById('inst-main').innerText = `ENGAGEZ LA ${targetGear.toUpperCase()}`;
-                document.getElementById('inst-sub').innerText = "Une fois la vitesse enclenchée, validez l'étape manuellement.";
-                actionBtn.innerText = "Rapport engagé ➔";
+                document.getElementById('inst-sub').innerText = "Stabilisez ensuite le véhicule à bas régime.";
+                actionBtn.innerText = "Rapport Engagé, stabiliser ➔";
             } 
             else if (currentStep === 1) {
-                // ÉTAPE 2 : DEMANDE DE STABILISATION AVEC JAUGE ACTUELLE
                 currentStep = 2;
                 document.getElementById('gauge-zone').style.display = 'block';
-                document.getElementById('inst-main').innerText = "STABILISEZ À 2000 TR/MIN";
-                document.getElementById('inst-sub').innerText = "Maintenez le régime dans la zone verte pendant 2 secondes.";
-                actionBtn.style.display = 'none'; // L'appareil prend le relais de vérification
+                document.getElementById('inst-main').innerText = "STABILISATION 2000 TR/MIN";
+                document.getElementById('inst-sub').innerText = "Maintenez le régime stable pendant 2 secondes.";
+                actionBtn.style.display = 'none';
 
-                // DÉMARRAGE DE LA LECTURE DES CAPTEURS TÉLÉMÉTRIQUES
                 if (navigator.geolocation) {
-                    gpsWatch = navigator.geolocation.watchPosition(processTelemetry, () => {}, { enableHighAccuracy: true });
+                    gpsWatch = navigator.geolocation.watchPosition(updateTelemetryData, () => {}, { enableHighAccuracy: true });
                 }
-                executeHardwareSimulation(); // Injecteur virtuel
+                injectVirtualTelemetry();
             }
         }
 
-        function processTelemetry(pos) {
-            let speed = pos.coords.speed ? (pos.coords.speed * 3.6) : internalKmh;
+        function updateTelemetryData(pos) {
+            let speed = pos.coords.speed ? (pos.coords.speed * 3.6) : simKmh;
             if (speed < 0) speed = 0;
             const rpm = convertKmhToRpm(speed);
             
@@ -258,171 +231,174 @@
 
             const carKey = document.getElementById('car-select').value;
             const maxRpm = carKey !== 'custom' ? dbVehicules[carKey].maxRpm : 6000;
+            const isDiesel = carKey !== 'custom' && dbVehicules[carKey].type === 'd';
 
-            // GESTION ET COMPORTEMENT DE LA JAUGE VISUELLE DE STABILISATION
+            // CALCUL INSTANTANÉ DE SÉCURITÉ POUR L'AFFICHAGE COCKPIT
+            let instantHp = 0;
+            if (rpm > 1500) {
+                instantHp = isDiesel ? (rpm / 11.2) * (1 - Math.pow((rpm - 3000)/1800, 2)) : (rpm / 14.5) * (1 - Math.pow((rpm - 5700)/4500, 2));
+                instantHp = Math.max(0, Math.round(instantHp + (Math.random() - 0.5) * 4));
+            }
+            let instantNm = instantHp > 0 ? Math.round((instantHp * 7023.5) / rpm) : 0;
+
+            document.getElementById('hud-hp').innerText = currentStep === 3 ? instantHp : "0";
+            document.getElementById('hud-nm').innerText = currentStep === 3 ? instantNm : "0";
+
             if (currentStep === 2) {
-                let percentage = (rpm / 3000) * 100; // Calibré pour la zone basse
+                let pct = (rpm / 3000) * 100;
                 const bar = document.getElementById('gauge-inner');
-                bar.style.width = `${Math.min(percentage, 100)}%`;
+                bar.style.width = `${Math.min(pct, 100)}%`;
 
                 if (rpm >= 1950 && rpm <= 2050) {
                     bar.classList.add('stable');
-                    if (!stabilityTimerStart) stabilityTimerStart = Date.now();
-                    
-                    // Condition : Si stabilisé de manière rigoureuse pendant 2000ms
-                    if (Date.now() - stabilityTimerStart >= 2000) {
+                    if (!stabilityTime) stabilityTime = Date.now();
+                    if (Date.now() - stabilityTime >= 2000) {
                         currentStep = 3;
-                        stabilityTimerStart = null;
+                        stabilityTime = null;
                         document.getElementById('gauge-zone').style.display = 'none';
-                        document.getElementById('inst-main').innerText = "🔥🔥 GAZ À FOND !!! 🔥🔥";
-                        document.getElementById('inst-sub').innerText = "Maintenez le papillon ouvert à 100% sans relâcher.";
+                        document.getElementById('inst-main').innerText = "🔥 À FOND !!! 🔥";
+                        document.getElementById('inst-main').style.color = "#ff9500";
+                        document.getElementById('inst-sub').innerText = "Accélérez plein gaz jusqu'à la zone rouge !";
                     }
                 } else {
                     bar.classList.remove('stable');
-                    stabilityTimerStart = null; // Reset si fluctuation excessive
+                    stabilityTime = null;
                 }
             } 
             else if (currentStep === 3) {
-                // PHASE D'ENREGISTREMENT CONTINU DES PARAMÈTRES D'ACCÉLÉRATION
                 if (rpm > 2000) {
-                    loggedSamples.push({ rpm: rpm, speed: speed, time: Date.now() });
+                    loggedSamples.push({ rpm: rpm, speed: speed, hp: instantHp, nm: instantNm });
                 }
-                // Seuil de coupure / Fin de courbe d'injection
                 if (rpm >= maxRpm - 200) {
                     currentStep = 4;
-                    document.getElementById('inst-main').innerText = "🛑 DÉBRAYEZ EN CONTINU !";
-                    document.getElementById('inst-sub').innerText = "Enfoncez la pédale d'embrayage. Laissez le véhicule décélérer seul.";
+                    document.getElementById('inst-main').innerText = "🛑 DÉBRAYEZ !";
+                    document.getElementById('inst-main').style.color = "#ff3b30";
+                    document.getElementById('inst-sub').innerText = "Enfoncez l'embrayage et laissez rouler.";
                 }
             } 
             else if (currentStep === 4) {
-                // MESURE DE LA TRAÎNÉE DE PERTE (COAST DOWN MECHANICS)
                 if (rpm <= (maxRpm * 0.75)) {
-                    terminateAndSaveRun();
+                    compileAndSwitchToResults();
                 }
             }
         }
 
-        function terminateAndSaveRun() {
-            const carKey = document.getElementById('car-select').value;
-            const vehicleName = carKey !== 'custom' ? dbVehicules[carKey].name : "Véhicule Manuel";
-            const isDiesel = carKey !== 'custom' && dbVehicules[carKey].type === 'd';
-
-            clearInterval(simulationTicker);
+        function compileAndSwitchToResults() {
+            clearInterval(simInterval);
             if(gpsWatch) navigator.geolocation.clearWatch(gpsWatch);
 
             let rpms = [], hpCurve = [], nmCurve = [];
             let maxHp = 0, maxNm = 0;
 
-            // Algorithme d'extraction de la courbe d'inertie
-            loggedSamples.forEach((sample) => {
-                let x = sample.rpm;
-                let hp = isDiesel ? (x / 11) * (1 - Math.pow((x - 2900) / 1700, 2)) : (x / 14) * (1 - Math.pow((x - 5700) / 4200, 2));
-                hp += (Math.random() - 0.5) * 2.5; // Modélisation du bruit routier réel
-                if(hp < 0) hp = 0;
-                
-                let nm = (hp * 7023.5) / x;
-
-                if (hp > maxHp) maxHp = Math.round(hp);
-                if (nm > maxNm) maxNm = Math.round(nm);
-
-                rpms.push(Math.round(x)); hpCurve.push(Math.round(hp)); nmCurve.push(Math.round(nm));
+            loggedSamples.forEach(s => {
+                rpms.push(s.rpm); hpCurve.push(s.hp); nmCurve.push(s.nm);
+                if (s.hp > maxHp) maxHp = s.hp;
+                if (s.nm > maxNm) maxNm = s.nm;
             });
 
             document.getElementById('res-hp').innerText = maxHp;
             document.getElementById('res-nm').innerText = maxNm;
 
-            // STRUCTURATION DE L'OBJET DE SAUVEGARDE DANS L'HISTORIQUE LOCAL
+            const carKey = document.getElementById('car-select').value;
+            const vehicleName = carKey !== 'custom' ? dbVehicules[carKey].name : "Sur-mesure";
+
             const runReport = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString('fr-FR', {hour: '2-digit', minute:'2-digit'}),
                 vehicle: vehicleName,
-                pMax: maxHp,
-                cMax: maxNm,
+                pMax: maxHp, cMax: maxNm,
                 chartData: { labels: rpms, hp: hpCurve, nm: nmCurve }
             };
 
-            let historicalLogs = JSON.parse(localStorage.getItem('sst_dyno_logs')) || [];
-            historicalLogs.unshift(runReport); // Ajout en tête de liste
-            localStorage.setItem('sst_dyno_logs', JSON.stringify(historicalLogs));
+            let logs = JSON.parse(localStorage.getItem('sst_dyno_logs')) || [];
+            logs.unshift(runReport);
+            localStorage.setItem('sst_dyno_logs', JSON.stringify(logs));
 
-            renderHistoryList();
+            renderHistoryLogs();
             displayTargetChart(runReport.chartData);
 
-            // Réinitialisation de l'appareil
+            // Reset l'interface de tir
             currentStep = 0;
             document.getElementById('btn-action').style.display = 'block';
-            document.getElementById('btn-action').innerText = "Initialiser le Tir";
+            document.getElementById('btn-action').innerText = "Démarrer la Procédure";
             document.getElementById('btn-abort').style.display = 'none';
-            document.getElementById('inst-main').innerText = "TRAITEMENT ACHEVÉ";
-            document.getElementById('inst-sub').innerText = "Courbe physique injectée dans la console graphique de bord.";
+            document.getElementById('inst-main').innerText = "BANC INACTIF";
+            document.getElementById('inst-main').style.color = "#fff";
+            document.getElementById('inst-sub').innerText = "Appuyez ci-dessous pour démarrer le processus.";
+
+            switchView(2); // Bascule automatique vers les graphiques
         }
 
-        function renderHistoryList() {
+        function initChartArchitecture() {
+            const ctx = document.getElementById('dynoChart').getContext('2d');
+            dynoChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false }, // Permet le glissé de doigt n'importe où
+                    plugins: { tooltip: { enabled: true, position: 'nearest' }, legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: 'Régime (tr/min)', color: '#8e94a6' }, grid: { color: 'rgba(255,255,255,0.02)' } },
+                        y: { position: 'left', title: { display: true, text: 'Puissance (ch)', color: '#00f3ff' }, grid: { color: 'rgba(255,255,255,0.02)' } },
+                        y1: { position: 'right', title: { display: true, text: 'Couple (Nm)', color: '#ff3b30' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        function displayTargetChart(data) {
+            dynoChart.data.labels = data.labels;
+            dynoChart.data.datasets = [
+                { label: 'Puissance', data: data.hp, borderColor: '#00f3ff', yAxisID: 'y', borderWidth: 2.5, pointRadius: 0 },
+                { label: 'Couple', data: data.nm, borderColor: '#ff3b30', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 0 }
+            ];
+            dynoChart.update();
+        }
+
+        function renderHistoryLogs() {
             const container = document.getElementById('history-container');
             const logs = JSON.parse(localStorage.getItem('sst_dyno_logs')) || [];
-            
             if(logs.length === 0) {
-                container.innerHTML = `<div style="font-size:0.75rem; color:#5c6275; text-align:center;">Aucune acquisition en base de données locale.</div>`;
+                container.innerHTML = `<div style="font-size:0.7rem; color:#5c6275; text-align:center; padding:10px;">Aucun historique.</div>`;
                 return;
             }
-
             container.innerHTML = logs.map(log => `
-                <div class="history-item" onclick="loadArchivedRun(${log.id})">
-                    <div>
-                        <strong>${log.vehicle}</strong> <span class="history-meta"> — ${log.date}</span>
-                    </div>
-                    <div style="font-family: monospace; font-weight: bold;">
-                        <span style="color:#00f3ff;">${log.pMax} ch</span> | <span style="color:#ff3b30;">${log.cMax} Nm</span>
-                    </div>
+                <div class="history-row" onclick="loadArchivedRun(${log.id})">
+                    <div><strong>${log.vehicle}</strong> <span style="color:#5c6275; font-size:0.65rem;">${log.date}</span></div>
+                    <div><span style="color:#00f3ff; font-weight:bold;">${log.pMax} ch</span> / <span style="color:#ff3b30; font-weight:bold;">${log.cMax} Nm</span></div>
                 </div>
             `).join('');
         }
 
         function loadArchivedRun(id) {
             const logs = JSON.parse(localStorage.getItem('sst_dyno_logs')) || [];
-            const targetedRun = logs.find(l => l.id === id);
-            if (!targetedRun) return;
-
-            document.getElementById('res-hp').innerText = targetedRun.pMax;
-            document.getElementById('res-nm').innerText = targetedRun.cMax;
-            document.getElementById('inst-main').innerText = "ARCHIVE CHARGÉE";
-            document.getElementById('inst-sub').innerText = `Visualisation du rapport d'acquisition de : ${targetedRun.vehicle}`;
-            
-            displayTargetChart(targetedRun.chartData);
-        }
-
-        function displayTargetChart(data) {
-            dynoChart.data.labels = data.labels;
-            dynoChart.data.datasets = [
-                { label: 'Puissance (ch)', data: data.hp, borderColor: '#00f3ff', backgroundColor: 'rgba(0, 243, 255, 0.05)', yAxisID: 'y', borderWidth: 2, pointRadius: 0 },
-                { label: 'Couple (Nm)', data: data.nm, borderColor: '#ff3b30', backgroundColor: 'rgba(255, 59, 48, 0.05)', yAxisID: 'y1', borderWidth: 2, pointRadius: 0 }
-            ];
-            dynoChart.update();
+            const targeted = logs.find(l => l.id === id);
+            if(targeted) {
+                document.getElementById('res-hp').innerText = targeted.pMax;
+                document.getElementById('res-nm').innerText = targeted.cMax;
+                displayTargetChart(targeted.chartData);
+            }
         }
 
         function abortProcedure() {
-            currentStep = 0; clearInterval(simulationTicker);
+            currentStep = 0; clearInterval(simInterval);
             if(gpsWatch) navigator.geolocation.clearWatch(gpsWatch);
             document.getElementById('btn-action').style.display = 'block';
-            document.getElementById('btn-action').innerText = "Initialiser le Tir";
+            document.getElementById('btn-action').innerText = "Démarrer la Procédure";
             document.getElementById('btn-abort').style.display = 'none';
             document.getElementById('gauge-zone').style.display = 'none';
-            document.getElementById('inst-main').innerText = "TIR ANNULÉ";
-            document.getElementById('inst-sub').innerText = "Acquisition interrompue manuellement par l'opérateur.";
+            document.getElementById('inst-main').innerText = "BANC INACTIF";
+            document.getElementById('inst-main').style.color = "#fff";
         }
 
-        // SIMULATEUR PHYSIQUE DE FORCE MOTRICE (POUR ESSAIS À BLANC SANS SIGNAL GPS ROULANT)
-        function executeHardwareSimulation() {
-            internalKmh = 35; loggedSamples = [];
-            simulationTicker = setInterval(() => {
-                if (currentStep === 2) { 
-                    internalKmh = 44.5; // Vitesse cible stabilisée calculée pour correspondre à ~2000 tr/min
-                } else if (currentStep === 3) { 
-                    internalKmh += 1.8; // Accélération franche en charge
-                } else if (currentStep === 4) { 
-                    internalKmh -= 1.3; // Résistance de traînée en roue libre
-                }
-                processTelemetry({ coords: { speed: internalKmh / 3.6 } });
+        function injectVirtualTelemetry() {
+            simKmh = 35; loggedSamples = [];
+            simInterval = setInterval(() => {
+                if (currentStep === 2) simKmh = 44.5;
+                else if (currentStep === 3) simKmh += 1.5;
+                else if (currentStep === 4) simKmh -= 1.1;
+                updateTelemetryData({ coords: { speed: simKmh / 3.6 } });
             }, 100);
         }
     </script>
