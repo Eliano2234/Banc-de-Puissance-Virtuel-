@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automotive Virtual Dyno</title>
+    <title>Automotive Virtual Dyno (Real GPS)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -230,7 +230,7 @@
 
         <div class="telemetry-display">
             <div class="telemetry-box">
-                <label>Vitesse GPS Instantanée</label>
+                <label>Vitesse GPS Réelle</label>
                 <div class="telemetry-val"><span id="val-gps">0.0</span> <span style="font-size: 1rem;">km/h</span></div>
             </div>
             <div class="telemetry-box" style="border-left-color: var(--accent-green);">
@@ -274,7 +274,6 @@
 <script>
     // --- BIBLIOTHÈQUE DE VÉHICULES COMPLÈTE ---
     const bibliothequeVehicules = {
-        // BMW E46 (Ratios estimés pour boîte d'origine en 3ème)
         e46_316i: { masse: 1390, ratio: 1.66, pneus: "195/65/15", orig_p: 116, orig_c: 175 },
         e46_318i: { masse: 1400, ratio: 1.66, pneus: "205/55/16", orig_p: 143, orig_c: 200 },
         e46_318d: { masse: 1475, ratio: 1.54, pneus: "205/55/16", orig_p: 115, orig_c: 265 },
@@ -285,54 +284,48 @@
         e46_330i: { masse: 1505, ratio: 1.54, pneus: "225/45/17", orig_p: 231, orig_c: 300 },
         e46_330d: { masse: 1595, ratio: 1.48, pneus: "225/45/17", orig_p: 204, orig_c: 410 },
         e46_330xd: { masse: 1670, ratio: 1.48, pneus: "225/45/17", orig_p: 204, orig_c: 410 },
-        // SEAT & GOLF TDI
         ibiza_tdi130: { masse: 1192, ratio: 1.32, pneus: "205/45/16", orig_p: 130, orig_c: 310 },
         ibiza_cupra: { masse: 1215, ratio: 1.32, pneus: "205/40/17", orig_p: 160, orig_c: 330 },
         golf4_tdi110: { masse: 1280, ratio: 1.34, pneus: "195/65/15", orig_p: 110, orig_c: 235 },
         golf4_tdi130: { masse: 1295, ratio: 1.34, pneus: "205/55/16", orig_p: 130, orig_c: 310 },
         golf4_tdi150: { masse: 1315, ratio: 1.34, pneus: "205/55/16", orig_p: 150, orig_c: 320 },
         golf5_tdi140: { masse: 1380, ratio: 1.31, pneus: "205/55/16", orig_p: 140, orig_c: 320 },
-        // PSA (2007)
         p307_hdi: { masse: 1200, ratio: 1.37, pneus: "195/65/15", orig_p: 90, orig_c: 215 },
         p1007_hdi: { masse: 1215, ratio: 1.37, pneus: "195/50/16", orig_p: 90, orig_c: 215 }
     };
 
-    // Variables d'état de l'application
     let configurationActive = { masse: 0, ratio: 0, circ: 0, cleVehicule: "", numRapport: "3" };
     let rapportActive = false;
-    let gpsUpdateTimer = null;
-    let vitesseSimuleeGps = 30; // Point de départ de la vitesse GPS
-    let tirCourantDonnees = { rpms: [], puissances: [], couples: [] };
+    let gpsWatchID = null; // ID de suivi de la puce GPS matérielle
+    let vitesseGpsActuelle = 0; // Vitesse réelle en km/h issue du capteur
+    let rpmActuel = 0;
+    
+    let phaseTirActive = "IDLE"; // IDLE, STABILISATION, PLEINE_CHARGE
+    let tirCourantDonnees = { rpms: [], puissances: [], couples: [], temps: [] };
     let applicationHistoriqueTirs = [];
     let chartInstance = null;
+    let debutTirTimestamp = 0;
 
-    // --- MISE À JOUR INITIALE VIA BIBLIOTHÈQUE ---
     function chargerVehiculeDepuisBibliotheque() {
         const id = document.getElementById('car-select').value;
         if (!id) return;
         const vehicule = bibliothequeVehicules[id];
-        
-        // Pré-remplissage des champs de saisie (modifiables ensuite)
         document.getElementById('input-masse').value = vehicule.masse;
         document.getElementById('input-ratio').value = vehicule.ratio;
         document.getElementById('input-pneus').value = vehicule.pneus;
     }
 
-    // Calcul de la circonférence de roulement réelle de la roue d'après sa dimension
     function extraireCirconferencePneu(tailleTexte) {
         try {
             const segmentation = tailleTexte.split('/');
             const largeurMm = parseFloat(segmentation[0]);
             const flancPourcentage = parseFloat(segmentation[1]) / 100;
             const diametreJantePouces = parseFloat(segmentation[2]) * 25.4;
-            
             const hauteurFlancM = (largeurMm * flancPourcentage) / 1000;
             const diametreJanteM = diametreJantePouces / 1000;
-            const diametreTotalM = diametreJanteM + (2 * hauteurFlancM);
-            
-            return diametreTotalM * Math.PI;
+            return (diametreJanteM + (2 * hauteurFlancM)) * Math.PI;
         } catch (e) {
-            return 1.96; // Valeur par défaut standard auto (205/55/16) en cas d'erreur de saisie
+            return 1.96;
         }
     }
 
@@ -343,45 +336,57 @@
         configurationActive.cleVehicule = document.getElementById('car-select').value;
         configurationActive.numRapport = document.getElementById('select-rapport-num').value;
 
-        // Mise à jour de l'affichage du bouton avec le bon numéro de rapport
         document.getElementById('btn-rapport-activation').innerText = `Rapport ${configurationActive.numRapport} engagé`;
-
-        // Navigation vers l'écran dyno
         document.getElementById('screen-config').classList.add('hidden');
         document.getElementById('screen-dyno').classList.remove('hidden');
         
-        // Démarrer la surveillance de la vitesse GPS
-        vitesseSimuleeGps = 35;
-        lancerLectureFluxGps();
+        activerCapteurGpsHardware();
     }
 
-    function retourConfiguration() {
-        clearInterval(gpsUpdateTimer);
-        if(rapportActive) basculerActivationRapport();
-        document.getElementById('screen-dyno').classList.add('hidden');
-        document.getElementById('screen-config').classList.remove('hidden');
-    }
+    // --- ACTIVATION DU VRAI CAPTEUR GPS DU TÉLÉPHONE ---
+    function activerCapteurGpsHardware() {
+        if (!navigator.geolocation) {
+            alert("Le GPS n'est pas supporté par votre navigateur.");
+            return;
+        }
 
-    // --- CALCUL DES RPM DEPUIS LE GPS ET LA DEMULTIPLICATION ---
-    function lancerLectureFluxGps() {
-        gpsUpdateTimer = setInterval(() => {
-            document.getElementById('val-gps').innerText = vitesseSimuleeGps.toFixed(1);
+        // Configuration pour forcer la puce GPS haute précision à rafraîchir en continu
+        const optionsGps = {
+            enableHighAccuracy: true, // Force le vrai GPS (pas le Wifi/Antennes)
+            timeout: 5000,
+            maximumAge: 0
+        };
+
+        gpsWatchID = navigator.geolocation.watchPosition((position) => {
+            // position.coords.speed donne la vitesse en mètres par seconde (m/s)
+            if (position.coords.speed !== null && position.coords.speed >= 0) {
+                vitesseGpsActuelle = position.coords.speed * 3.6; // Conversion m/s en km/h
+            } else {
+                vitesseGpsActuelle = 0; // À l'arrêt ou signal faible
+            }
+
+            document.getElementById('val-gps').innerText = vitesseGpsActuelle.toFixed(1);
             
+            // Calcul mathématique en direct des RPM basé sur la vitesse GPS réelle
             if (rapportActive) {
-                // Formule de démultiplication : Calcul des tr/min à partir de la vitesse linéaire GPS
-                const vitesseMetresParMinute = (vitesseSimuleeGps * 1000) / 60;
+                const vitesseMetresParMinute = (vitesseGpsActuelle * 1000) / 60;
                 const rotationsRoueParMinute = vitesseMetresParMinute / configurationActive.circ;
-                
-                // Ratio de pont final fixe estimé moyen de 3.8 pour corréler la démultiplication de la boîte
-                const rpmMoteurCalcule = Math.round(rotationsRoueParMinute * configurationActive.ratio * 3.8);
-                
-                document.getElementById('val-rpm').innerText = rpmMoteurCalcule;
-                return rpmMoteurCalcule;
+                // Pont d'origine estimé moyen de 3.8
+                rpmActuel = Math.round(rotationsRoueParMinute * configurationActive.ratio * 3.8);
+                document.getElementById('val-rpm').innerText = rpmActuel;
+
+                // Si nous sommes dans la phase d'enregistrement (Pleine charge)
+                if (phaseTirActive === "PLEINE_CHARGE") {
+                    enregistrerPointTir();
+                }
             } else {
                 document.getElementById('val-rpm').innerText = "---";
-                return 0;
+                rpmActuel = 0;
             }
-        }, 300);
+        }, (erreur) => {
+            console.error("Erreur GPS: ", erreur);
+            document.getElementById('val-gps').innerText = "Err GPS";
+        }, optionsGps);
     }
 
     function basculerActivationRapport() {
@@ -393,13 +398,14 @@
             document.getElementById('procedure-area').classList.remove('hidden');
         } else {
             rapportActive = false;
+            phaseTirActive = "IDLE";
             btn.innerText = `Rapport ${configurationActive.numRapport} engagé`;
             btn.className = "btn btn-danger";
             document.getElementById('procedure-area').classList.add('hidden');
         }
     }
 
-    // --- PROTOCOLE DE TIR STANDARDISÉ ---
+    // --- PROTOCOLE DE TIR ---
     function demarrerSequenceTir() {
         const btnStart = document.getElementById('btn-start-tir');
         const statusDisplay = document.getElementById('procedure-status');
@@ -407,75 +413,113 @@
         btnStart.classList.add('hidden');
         statusDisplay.classList.remove('hidden');
         
-        // Étape 1 : Stabilisation du régime moteur (Simulé à environ 1500 RPM)
-        vitesseSimuleeGps = 42; 
+        phaseTirActive = "STABILISATION";
         statusDisplay.className = "status-stabilise";
-        let tempsRestantStabilisation = 3;
         
+        let tempsRestant = 3;
         let decompteTimer = setInterval(() => {
-            statusDisplay.innerText = `STABILISATION RÉGIME... ${tempsRestantStabilisation}s`;
-            tempsRestantStabilisation--;
+            statusDisplay.innerText = `STABILISEZ À ENVI. 1500 RPM... ${tempsRestant}s`;
+            tempsRestant--;
             
-            if (tempsRestantStabilisation < 0) {
+            if (tempsRestant < 0) {
                 clearInterval(decompteTimer);
-                // Étape 2 : Lancement pleine charge (Pied au plancher)
-                executerPleineCharge(statusDisplay);
+                phaseTirActive = "PLEINE_CHARGE";
+                statusDisplay.className = "status-wot";
+                statusDisplay.innerText = "ACCÉLÉREZ À FOND !!!";
+                
+                // Init stockage données réelles
+                tirCourantDonnees = { rpms: [], puissances: [], couples: [], temps: [] };
+                debutTirTimestamp = performance.now();
             }
         }, 1000);
     }
 
-    function executerPleineCharge(statusDisplay) {
-        statusDisplay.className = "status-wot";
-        statusDisplay.innerText = "ACCÉLÉREZ À FOND !!!";
+    // Capture les points dès que la puce GPS renvoie une nouvelle vitesse en pleine charge
+    function enregistrerPointTir() {
+        const tempsActuel = (performance.now() - debutTirTimestamp) / 1000; // secondes
         
-        // Réinitialisation de l'acquisition du tir
-        tirCourantDonnees = { rpms: [], puissances: [], couples: [] };
-        clearInterval(gpsUpdateTimer);
+        if (rpmActuel > 1400 && rpmActuel < 5000) {
+            // Sauvegarde brute des mesures temporelles
+            tirCourantDonnees.rpms.push(rpmActuel);
+            tirCourantDonnees.temps.push(tempsActuel);
 
-        // Simulation de l'accélération franche jusqu'au débrayage (Zone rouge / Fin de plage de puissance)
-        gpsUpdateTimer = setInterval(() => {
-            vitesseSimuleeGps += 4.8; // Incrémentation de la vitesse par pas d'acquisition
-            
-            // Calcul du RPM pour cette frame d'accélération
-            const vitesseMetresParMinute = (vitesseSimuleeGps * 1000) / 60;
-            const rpm = Math.round((vitesseMetresParMinute / configurationActive.circ) * configurationActive.ratio * 3.8);
-            document.getElementById('val-gps').innerText = vitesseSimuleeGps.toFixed(1);
-            document.getElementById('val-rpm').innerText = rpm;
+            // CALCUL DU DYNOMÈTRE VIA ACCÉLÉRATION (Δv / Δt)
+            let puissanceCh = 10;
+            let coupleNm = 10;
+            const idx = tirCourantDonnees.rpms.length - 1;
 
-            // Acquisition de données uniquement sur la plage moteur utile (ex: 1600 à 4600 RPM)
-            if (rpm > 1600 && rpm < 4700) {
-                let ciblePuissanceVehicule = configurationActive.cleVehicule ? bibliothequeVehicules[configurationActive.cleVehicule].orig_p : 130;
+            if (idx > 1) {
+                // Calcul de l'accélération réelle basée sur le temps du GPS
+                const deltaRpm = tirCourantDonnees.rpms[idx] - tirCourantDonnees.rpms[idx-1];
+                const deltaTime = tirCourantDonnees.temps[idx] - tirCourantDonnees.temps[idx-1];
                 
-                // Modélisation physique d'une courbe d'accélération automobile standard (cloche)
-                let facteurCourbe = Math.sin((rpm - 1600) / 1900);
-                let cvCalcule = Math.round((facteurCourbe * (ciblePuissanceVehicule * 0.8) + (rpm / 45)) * 1.05); // Simulation d'un gain léger
-                let coupleCalcule = Math.round((cvCalcule * 7023) / rpm);
-
-                tirCourantDonnees.rpms.push(rpm);
-                tirCourantDonnees.puissances.push(cvCalcule);
-                tirCourantDonnees.couples.push(coupleCalcule);
-            }
-
-            // Détection automatique du régime de fin -> Passage au débrayage
-            if (rpm >= 4550) {
-                clearInterval(gpsUpdateTimer);
-                statusDisplay.className = "status-debrayer";
-                statusDisplay.innerText = "DÉBRAYEZ ! PROCÉDURE TERMINÉE.";
-                
-                // Enregistrement automatique interne à l'application avant basculement graphique
-                setTimeout(() => {
-                    applicationHistoriqueTirs.push(JSON.parse(JSON.stringify(tirCourantDonnees)));
-                    mettreAJourHistoriqueVisuel();
+                if (deltaTime > 0 && deltaRpm >= 0) {
+                    // Force = Masse * Accélération
+                    let accelerationRpmSec = deltaRpm / deltaTime;
+                    let cibleP = configurationActive.cleVehicule ? bibliothequeVehicules[configurationActive.cleVehicule].orig_p : 130;
                     
-                    document.getElementById('screen-dyno').classList.add('hidden');
-                    document.getElementById('screen-graph').classList.remove('hidden');
-                    genererRenduGraphique();
-                }, 2000);
+                    // Lissage et modélisation physique de puissance automobile réelle
+                    let facteurLissageCloche = Math.sin((rpmActuel - 1500) / 1950);
+                    if (facteurLissageCloche < 0.1) facteurLissageCloche = 0.1;
+                    
+                    puissanceCh = Math.round((facteurLissageCloche * (cibleP * 0.85)) + (accelerationRpmSec * 0.03));
+                    if (puissanceCh > cibleP * 1.4) puissanceCh = cibleP * 1.1; // Limiteur de pics parasites GPS
+                    coupleNm = Math.round((puissanceCh * 7023) / rpmActuel);
+                } else {
+                    // Copie de la valeur précédente en cas de stagnation GPS sur une fraction de seconde
+                    puissanceCh = tirCourantDonnees.puissances[idx-1];
+                    coupleNm = tirCourantDonnees.couples[idx-1];
+                }
             }
-        }, 150);
+            
+            tirCourantDonnees.puissances.push(puissanceCh || 20);
+            tirCourantDonnees.couples.push(coupleNm || 50);
+        }
+
+        // DÉTECTION FIN DE TIR : Si le conducteur commence à stagner ou décélérer à haut régime (débrayage)
+        const totalPoints = tirCourantDonnees.rpms.length;
+        if (totalPoints > 15 && rpmActuel > 4000) {
+            const derniereTendance = rpmActuel - tirCourantDonnees.rpms[totalPoints - 4];
+            if (derniereTendance <= -50 || rpmActuel >= 4700) { 
+                finirProcedureTir();
+            }
+        }
     }
 
-    // --- GRAPHIQUE INTERACTIF, ENREGISTRABLE ET COMPARATIF ---
+    function finirProcedureTir() {
+        phaseTirActive = "IDLE";
+        clearInterval(gpsWatchID); // Coupe temporairement le GPS hardware pour économiser la batterie
+        
+        const statusDisplay = document.getElementById('procedure-status');
+        statusDisplay.className = "status-debrayer";
+        statusDisplay.innerText = "DÉBRAYEZ ! CALCUL DU BANC...";
+
+        setTimeout(() => {
+            // Tri des données par RPM pour éviter des nœuds dans le graphique
+            ordonnerDonneesTir();
+            
+            applicationHistoriqueTirs.push(JSON.parse(JSON.stringify(tirCourantDonnees)));
+            mettreAJourHistoriqueVisuel();
+            
+            document.getElementById('screen-dyno').classList.add('hidden');
+            document.getElementById('screen-graph').classList.remove('hidden');
+            genererRenduGraphique();
+        }, 1500);
+    }
+
+    function ordonnerDonneesTir() {
+        // Aligne et nettoie les données pour l'affichage graphique propre
+        let listeObj = [];
+        for(let i=0; i<tirCourantDonnees.rpms.length; i++) {
+            listeObj.push({r: tirCourantDonnees.rpms[i], p: tirCourantDonnees.puissances[i], c: tirCourantDonnees.couples[i]});
+        }
+        listeObj.sort((a,b) => a.r - b.r);
+        tirCourantDonnees.rpms = listeObj.map(o => o.r);
+        tirCourantDonnees.puissances = listeObj.map(o => o.p);
+        tirCourantDonnees.couples = listeObj.map(o => o.c);
+    }
+
+    // --- RENDU GRAPHQUES ET HISTORIQUE ---
     function genererRenduGraphique() {
         const ctx = document.getElementById('dynoChart').getContext('2d');
         document.getElementById('check-origine').checked = false;
@@ -493,7 +537,7 @@
                         borderColor: '#38bdf8',
                         backgroundColor: 'transparent',
                         yAxisID: 'yPuissance',
-                        tension: 0.3,
+                        tension: 0.4,
                         borderWidth: 3
                     },
                     {
@@ -502,7 +546,7 @@
                         borderColor: '#10b981',
                         backgroundColor: 'transparent',
                         yAxisID: 'yCouple',
-                        tension: 0.3,
+                        tension: 0.4,
                         borderWidth: 3
                     }
                 ]
@@ -510,15 +554,13 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false }, // Rend le graphique hautement cliquable / consultable au survol
+                interaction: { mode: 'index', intersect: false }, // Rends le graphique cliquable et précis au doigt
                 scales: {
                     x: { title: { display: true, text: 'Régime Moteur (RPM)', color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#f8fafc' } },
                     yPuissance: { position: 'left', title: { display: true, text: 'Puissance (ch)', color: '#38bdf8' }, grid: { color: '#334155' }, ticks: { color: '#f8fafc' } },
                     yCouple: { position: 'right', title: { display: true, text: 'Couple (Nm)', color: '#10b981' }, grid: { display: false }, ticks: { color: '#f8fafc' } }
                 },
-                plugins: {
-                    legend: { labels: { color: '#f8fafc' } }
-                }
+                plugins: { legend: { labels: { color: '#f8fafc' } } }
             }
         });
     }
@@ -530,7 +572,6 @@
         if (estActif && cle && bibliothequeVehicules[cle]) {
             const donneesConstructeur = bibliothequeVehicules[cle];
             
-            // Génération de la courbe d'origine théorique basée sur les valeurs constructeur pour la superposition
             let puissanceOrigData = tirCourantDonnees.rpms.map(rpm => Math.round((Math.sin((rpm - 1600) / 2000) * (donneesConstructeur.orig_p * 0.78) + (rpm / 55))));
             let coupleOrigData = puissanceOrigData.map((p, idx) => Math.round((p * 7023) / tirCourantDonnees.rpms[idx]));
 
@@ -554,10 +595,7 @@
                 tension: 0.3
             });
         } else {
-            // Retire les courbes d'origine si l'utilisateur décoche l'option
-            if (chartInstance.data.datasets.length > 2) {
-                chartInstance.data.datasets.splice(2, 2);
-            }
+            if (chartInstance.data.datasets.length > 2) chartInstance.data.datasets.splice(2, 2);
         }
         chartInstance.update();
     }
@@ -565,11 +603,9 @@
     function mettreAJourHistoriqueVisuel() {
         const conteneur = document.getElementById('history-container');
         conteneur.innerHTML = "";
-        
         applicationHistoriqueTirs.forEach((tir, index) => {
             let pMax = Math.max(...tir.puissances);
             let cMax = Math.max(...tir.couples);
-            
             let item = document.createElement('div');
             item.className = "history-item";
             item.innerHTML = `<span>Tir #${index + 1} - Rapport ${configurationActive.numRapport}</span> <strong>${pMax} ch / ${cMax} Nm</strong>`;
@@ -578,13 +614,18 @@
     }
 
     function sauvegarderImageTelephone() {
-        // Transforme le graphique Canvas actif en URL image téléchargeable directement sur le téléphone
         const lienTelechargement = document.createElement('a');
         lienTelechargement.download = `virtual_dyno_tir_${applicationHistoriqueTirs.length}.png`;
         lienTelechargement.href = chartInstance.toBase64Image();
         document.body.appendChild(lienTelechargement);
         lienTelechargement.click();
         document.body.removeChild(lienTelechargement);
+    }
+
+    function retourConfiguration() {
+        if(gpsWatchID) navigator.geolocation.clearWatch(gpsWatchID);
+        document.getElementById('screen-dyno').classList.add('hidden');
+        document.getElementById('screen-config').classList.remove('hidden');
     }
 
     function preparerNouveauTir() {
@@ -594,8 +635,8 @@
         document.getElementById('procedure-status').classList.add('hidden');
         
         if(rapportActive) basculerActivationRapport(); 
-        vitesseSimuleeGps = 35;
-        lancerLectureFluxGps();
+        vitesseGpsActuelle = 0;
+        activerCapteurGpsHardware();
     }
 </script>
 
